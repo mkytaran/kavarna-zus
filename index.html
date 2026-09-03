@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#d9cbbe">
+  <title>ZUŠkafe</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Horní lišta s přepínačem režimu -->
+    <div class="top-bar">
+      <span class="app-title">☕ Kávovník ZUŠ</span>
+      <div class="theme-switch">
+        <button id="theme-btn" title="Přepnout režim" class="icon-btn">🌓</button>
+      </div>
+    </div>
+
+    <!-- PŘIHLAŠOVACÍ OBRAZOVKA -->
+    <section id="login-view">
+      <div class="card login-card">
+        <h2>Přihlášení</h2>
+        <div class="input-group">
+          <label for="login-name">Jméno</label>
+          <input type="text" id="login-name" placeholder="Zadej jméno" autocomplete="username">
+        </div>
+
+        <div class="input-group">
+          <label for="login-pin">Čtyřmístný PIN</label>
+          <input type="password" id="login-pin" inputmode="numeric" maxlength="4" placeholder="****">
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="remember-me" checked>
+          <label for="remember-me">Zapamatovat přihlášení</label>
+        </div>
+
+        <button id="login-btn" class="btn btn-primary">Vstoupit</button>
+      </div>
+    </section>
+
+    <!-- HLAVNÍ OBRAZOVKA -->
+    <section id="main-view" class="hidden">
+      
+      <!-- Uvítání a odhlášení -->
+      <div class="user-header">
+        <span id="user-greeting">Ahoj!</span>
+        <button id="logout-btn" class="link-btn">Odhlásit</button>
+      </div>
+
+      <!-- Kávový štítek zrnkové kávy -->
+      <div class="coffee-badge">
+        <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
+        <div class="badge-title" id="coffee-name">Brasil Pergamino</div>
+        <div class="coffee-attributes">
+          <div class="attr-row">
+            <span>Acidita:</span>
+            <span class="beans-meter" id="beans-acidita"></span>
+          </div>
+          <div class="attr-row">
+            <span>Intenzita:</span>
+            <span class="beans-meter" id="beans-intenzita"></span>
+          </div>
+          <div class="attr-row">
+            <span>Pražení:</span>
+            <span class="beans-meter" id="beans-prazeni"></span>
+          </div>
+        </div>
+
+        <!-- Hodnocení srdíčky -->
+        <div class="rating-box">
+          <div class="rating-prompt">Jak ti chutná?</div>
+          <div class="hearts-row" id="hearts-container">
+            <span class="heart" data-val="1">♥</span>
+            <span class="heart" data-val="2">♥</span>
+            <span class="heart" data-val="3">♥</span>
+            <span class="heart" data-val="4">♥</span>
+            <span class="heart" data-val="5">♥</span>
+          </div>
+          <div class="rating-label" id="rating-text">Klepni na srdíčko</div>
+        </div>
+      </div>
+
+      <!-- Interaktivní velký šálek -->
+      <div class="cup-center">
+        <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu">
+          <svg viewBox="0 0 100 80" class="cup-svg">
+            <path d="M 15 15 L 22 65 C 23 72, 77 72, 78 65 L 85 15 Z" class="cup-body" />
+            <path d="M 75 22 C 92 22, 92 50, 72 50" class="cup-handle" />
+            <ellipse cx="50" cy="15" rx="35" ry="9" class="cup-rim" />
+            <ellipse id="liquid" cx="50" cy="17" rx="31" ry="7" class="cup-liquid" />
+          </svg>
+          <div class="cup-click-label">Dnes piju kávu ☕</div>
+        </div>
+        <button id="undo-btn" class="btn-undo hidden">↩ Omyl? Vrátit 1 kávu</button>
+      </div>
+
+      <!-- Přehled 20 malých šálků -->
+      <div class="cups-container">
+        <div class="cups-title-row">
+          <span>Stav předplatného</span>
+          <strong id="cups-count-text">0 / 20</strong>
+        </div>
+        <div class="cups-grid" id="cups-grid">
+          <!-- 20 šálků se vygeneruje skriptem -->
+        </div>
+      </div>
+
+      <!-- Diskrétní stav pokladny -->
+      <div class="treasury-card">
+        <div class="treasury-header">Stav pokladny</div>
+        <div class="treasury-row">
+          <span>Vybráno: <b id="fin-vybrano">0 Kč</b></span>
+          <span>Náklady: <b id="fin-naklady">0 Kč</b></span>
+          <span>Zůstatek: <b id="fin-rozdil">0 Kč</b></span>
+        </div>
+      </div>
+
+      <!-- Tlačítko pro Admin panel -->
+      <button id="admin-switch-btn" class="btn btn-secondary hidden">Správa kavárny (Admin)</button>
+    </section>
+
+    <!-- ADMIN PANEL -->
+    <section id="admin-view" class="hidden">
+      <h2>Administrace</h2>
+      
+      <!-- Editace aktuální kávy -->
+      <div class="card">
+        <h3>Nastavení kávového štítku</h3>
+        <div class="input-group">
+          <label>Název kávy</label>
+          <input type="text" id="admin-coffee-name">
+        </div>
+        <div class="input-group">
+          <label>Acidita (1–5)</label>
+          <input type="number" id="admin-acidita" min="1" max="5">
+        </div>
+        <div class="input-group">
+          <label>Intenzita (1–5)</label>
+          <input type="number" id="admin-intenzita" min="1" max="5">
+        </div>
+        <div class="input-group">
+          <label>Stupeň pražení (1–5)</label>
+          <input type="number" id="admin-prazeni" min="1" max="5">
+        </div>
+        <button id="admin-save-coffee" class="btn btn-primary">Uložit kávu</button>
+      </div>
+
+      <!-- Tabulka uživatelů -->
+      <div class="card">
+        <h3>Kafaři a platby</h3>
+        <div style="overflow-x: auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Jméno</th>
+                <th>Předplaceno</th>
+                <th>Vypito</th>
+                <th>Akce</th>
+              </tr>
+            </thead>
+            <tbody id="admin-user-list"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button id="admin-back-btn" class="btn btn-secondary">Zpět na přehled</button>
+    </section>
+
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

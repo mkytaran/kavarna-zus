@@ -1,0 +1,21 @@
+{
+  "short_name": "ZUŠ Káva",
+  "name": "Kavárna ZUŠ",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#2c1810",
+  "theme_color": "#4a2c11",
+  "display": "standalone",
+  "orientation": "portrait"
+}
