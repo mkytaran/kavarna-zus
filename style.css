@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* Jemná krémová paleta (Light)  */
 :root {
   --bg-app: #f4eee6;
@@ -33,6 +34,18 @@
   --heart-inactive: #4a3e36;
   --treasury-bg: #241d19;
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+=======
+:root {
+  --espresso: #24140e;
+  --roast: #442617;
+  --latte: #c89d7c;
+  --crema: #e8d8c8;
+  --foam: #fdfaf6;
+  --accent: #d97443;
+  --danger: #b33927;
+  --shadow: 0 8px 24px rgba(36, 20, 14, 0.12);
+  --radius: 18px;
+>>>>>>> 86d7f7c0f510a513b3823defc4ab8b03274ae62c
 }
 
 * {
@@ -44,6 +57,7 @@
 }
 
 body {
+<<<<<<< HEAD
   background-color: var(--bg-app);
   color: var(--text-main);
   display: flex;
@@ -51,10 +65,19 @@ body {
   min-height: 100vh;
   padding: 12px;
   transition: background-color 0.3s, color 0.3s;
+=======
+  background-color: var(--foam);
+  color: var(--espresso);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+>>>>>>> 86d7f7c0f510a513b3823defc4ab8b03274ae62c
 }
 
 .app-container {
   width: 100%;
+<<<<<<< HEAD
   max-width: 420px;
   display: flex;
   flex-direction: column;
@@ -328,4 +351,202 @@ input[type="text"], input[type="password"], input[type="number"] {
   width: 45px;
   padding: 3px;
   font-size: 0.75rem;
+=======
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-size: 1.6rem;
+  color: var(--roast);
+  font-weight: 800;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Formuláře a vstupy */
+.input-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--roast);
+}
+
+select, input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--crema);
+  border-radius: 12px;
+  font-size: 1rem;
+  outline: none;
+  background: var(--foam);
+  color: var(--espresso);
+  transition: border-color 0.2s;
+}
+
+select:focus, input:focus {
+  border-color: var(--latte);
+}
+
+.btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--roast);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.2s;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--roast);
+  border: 2px solid var(--roast);
+  margin-top: 10px;
+}
+
+/* Interaktivní Šálek */
+.cup-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.cup-interactive {
+  width: 170px;
+  height: 170px;
+  cursor: pointer;
+  filter: drop-shadow(0 10px 15px rgba(68, 38, 23, 0.2));
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.cup-interactive:hover {
+  transform: scale(1.04);
+}
+
+.cup-interactive:active {
+  transform: scale(0.92);
+}
+
+.cup-interactive circle {
+  transition: fill 0.35s ease;
+}
+
+.cup-hint {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--latte);
+  font-weight: 600;
+}
+
+/* Statistiky a stav účtu */
+.user-status {
+  background: var(--foam);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.progress-text {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--roast);
+}
+
+.sub-text {
+  font-size: 0.85rem;
+  color: #7a6a60;
+  margin-top: 4px;
+}
+
+/* Pokladna / Finance widget */
+.treasury-card {
+  background: linear-gradient(135deg, var(--roast), var(--espresso));
+  color: var(--foam);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: auto;
+}
+
+.treasury-card h3 {
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.finance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.finance-item span {
+  display: block;
+  opacity: 0.8;
+  font-size: 0.75rem;
+}
+
+.finance-item strong {
+  font-size: 1rem;
+}
+
+.finance-balance {
+  grid-column: span 2;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Admin panel */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 15px;
+}
+
+.admin-table th, .admin-table td {
+  padding: 8px 4px;
+  text-align: left;
+  border-bottom: 1px solid var(--crema);
+}
+
+.admin-table input {
+  width: 50px;
+  padding: 4px;
+  font-size: 0.8rem;
+>>>>>>> 86d7f7c0f510a513b3823defc4ab8b03274ae62c
 }
