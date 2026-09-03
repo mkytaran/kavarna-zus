@@ -5,11 +5,7 @@ const ASSETS = [
   './style.css',
   './app.js',
   './manifest.json'
-<<<<<<< HEAD
 ]; 
-=======
-];
->>>>>>> 86d7f7c0f510a513b3823defc4ab8b03274ae62c
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
