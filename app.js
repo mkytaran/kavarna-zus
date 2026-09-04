@@ -1,6 +1,6 @@
 // URL vašeho Google Apps Script Web App
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
-
+ 
 const RATING_DESCRIPTIONS = {
   1: "1 – Nechutná mi",
   2: "2 – Nic moc",
