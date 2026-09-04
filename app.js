@@ -1,6 +1,7 @@
 // URL vašeho Google Apps Script Web App
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
- 
+
+// Popisky hodnocení kávy srdíčky
 const RATING_DESCRIPTIONS = {
   1: "1 – Nechutná mi",
   2: "2 – Nic moc",
@@ -9,11 +10,16 @@ const RATING_DESCRIPTIONS = {
   5: "5 – Skvělý kafe"
 };
 
+// SVG zrno s realistickou vlnitou esovitou rýhou pod úhlem -25°
 function createBeanSVG(isActive) {
   return `
     <svg viewBox="0 0 30 30" class="bean-svg ${isActive ? 'active' : 'inactive'}">
-      <ellipse cx="15" cy="15" rx="10" ry="13" class="bean-body" transform="rotate(-25 15 15)" />
-      <path d="M 12 4 Q 17 15 13 26" class="bean-crease" fill="none" stroke-width="2.2" stroke-linecap="round" />
+      <ellipse cx="15" cy="15" rx="9" ry="13.5" class="bean-body" transform="rotate(-25 15 15)" />
+      <path d="M 9.5 5 C 13.5 10, 11 14, 15 17.5 C 18 20.5, 17 24, 20.5 25" 
+            class="bean-crease" 
+            fill="none" 
+            stroke-width="1.6" 
+            stroke-linecap="round" />
     </svg>
   `;
 }
@@ -21,13 +27,14 @@ function createBeanSVG(isActive) {
 let state = {
   users: [],
   finance: {},
-  kava: { id: 1, nazev: "Brasil Pergamino", acidita: 2, intenzita: 4, prazeni: 3, aktivni: 1 },
+  kava: { id: 1, nazev: "Brasil Pergamino Sul de Minas", acidita: 2, intenzita: 4, prazeni: 3, aktivni: 1 },
   allCoffees: [],
   ratings: [],
   currentUser: null,
   clicksInSession: 0
 };
 
+// Registrace Service Workeru pro PWA
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW reg failed: ", err));
@@ -57,7 +64,13 @@ themeBtn.addEventListener("click", () => {
   localStorage.setItem("zus_theme", next);
 });
 
-// 2. PŘIHLÁŠENÍ ZE ZÁLOHY
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e => {
+  if (localStorage.getItem("zus_theme") === "system") {
+    document.documentElement.setAttribute("data-theme", e.matches ? "dark" : "light");
+  }
+});
+
+// 2. OKAMŽITÉ PŘIHLÁŠENÍ ZE ZÁLOHY
 function tryInstantAutoLogin() {
   const savedUser = localStorage.getItem("zus_saved_user");
   if (!savedUser) return;
@@ -161,7 +174,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   document.getElementById("login-view").classList.remove("hidden");
 });
 
-// 4. KÁVOVÝ ŠTÍTEK
+// 4. KÁVOVÝ ŠTÍTEK (S pojistkou proti chybějícím datům)
 function renderBeansMeter(containerId, value) {
   const container = document.getElementById(containerId);
   container.innerHTML = "";
@@ -172,14 +185,13 @@ function renderBeansMeter(containerId, value) {
 
 function renderCoffeeBadge() {
   if (!state.kava) return;
-  
   document.getElementById("coffee-name").textContent = state.kava.nazev || "Výběrová káva";
   renderBeansMeter("beans-acidita", state.kava.acidita || 3);
   renderBeansMeter("beans-intenzita", state.kava.intenzita || 3);
   renderBeansMeter("beans-prazeni", state.kava.prazeni || 3);
 }
 
-// 5. HODNOCENÍ VÁZANÉ NA AKTIVNÍ KÁVU
+// 5. HODNOCENÍ SRDÍČKY
 function initRating() {
   const hearts = document.querySelectorAll("#hearts-container .heart-btn");
   let myRating = 0;
@@ -200,7 +212,6 @@ function initRating() {
 
       paintHearts(val);
 
-      // Lokální aktualizace
       const existing = state.ratings.find(
         r => r.kavaId === state.kava.id && String(r.userId) === String(state.currentUser.id)
       );
@@ -340,7 +351,7 @@ function renderFinance() {
   document.getElementById("fin-rozdil").textContent = `${rozdil} Kč`;
 }
 
-// 9. ADMIN KARTOTÉKA KÁV S PERMANENTNÍM HODNOCENÍM
+// 9. ADMIN KARTOTÉKA KÁV
 document.getElementById("admin-switch-btn").addEventListener("click", () => {
   document.getElementById("main-view").classList.add("hidden");
   document.getElementById("bottom-bar").classList.add("hidden");
@@ -361,7 +372,6 @@ function renderAdminCoffeeHistory() {
   container.innerHTML = "";
 
   state.allCoffees.forEach(coffee => {
-    // Spočteme průměr pro tuto konkrétní kávu
     const coffeeRatings = state.ratings.filter(r => r.kavaId === coffee.id && r.rating > 0);
     const count = coffeeRatings.length;
     let avg = "0.0";
@@ -416,7 +426,6 @@ function renderAdminCoffeeHistory() {
 
     container.appendChild(card);
 
-    // Doplnění jmen kafařů
     const votesContainer = card.querySelector(`#votes-${coffee.id}`);
     coffeeRatings.forEach(r => {
       const vRow = document.createElement("div");
@@ -437,7 +446,6 @@ window.toggleCoffeeDetail = function(id) {
   arrow.classList.toggle("rotated");
 };
 
-// Aktivace dřívější kávy
 window.setActiveCoffee = async function(id) {
   const chosen = state.allCoffees.find(c => c.id === id);
   if (!chosen) return;
@@ -456,7 +464,6 @@ window.setActiveCoffee = async function(id) {
   alert(`Káva "${chosen.nazev}" byla nastavena jako aktivní!`);
 };
 
-// Vytvoření zbrusu nové kávy (uloží se trvale do seznamu)
 document.getElementById("admin-save-coffee").addEventListener("click", async () => {
   const nazev = document.getElementById("admin-coffee-name").value.trim();
   const acidita = Number(document.getElementById("admin-acidita").value);
@@ -478,7 +485,6 @@ document.getElementById("admin-save-coffee").addEventListener("click", async () 
     aktivni: 1
   };
 
-  // Původní deaktivujeme
   state.allCoffees.forEach(c => c.aktivni = 0);
   state.allCoffees.unshift(newCoffee);
   state.kava = newCoffee;
@@ -533,6 +539,7 @@ window.adminSaveUser = async function(id) {
   alert(`Uloženo: ${u.name}`);
 };
 
+// Start
 initTheme();
 tryInstantAutoLogin();
 loadData();

@@ -9,16 +9,17 @@
   --primary-hover: #3b1e0f;
   --accent: #b86e3b;
 
-  /* Šálek ve světlém režimu tmavší */
-  --cup-theme-color: #4a2818;
-  --cup-rim-color: #3b1f12;
-  --cup-liquid-color: #2b140a;
-  --cup-saucer-color: #d1c0b0;
+  /* Porcelánový šálek - světlý režim */
+  --porcelain-base: #331f16;
+  --porcelain-mid: #4a2f22;
+  --porcelain-highlight: #6e4735;
+  --porcelain-shadow: #1c0e08;
 
+  /* Kávová zrnka - světlý režim (tón v tónu s nízkým kontrastem) */
   --bean-active: #542d17;
+  --bean-line-active: #3b1e0d;
   --bean-inactive: #d9cbbe;
-  --bean-line-active: #fceee3;
-  --bean-line-inactive: #bdae9f;
+  --bean-line-inactive: #c5b5a6;
 
   --heart-active: #e03838;
   --heart-inactive: #dac8b8;
@@ -27,12 +28,6 @@
   --bottom-bar-bg: rgba(255, 251, 247, 0.94);
   --radius: 18px;
   --shadow: 0 6px 20px rgba(51, 32, 23, 0.07);
-
-  /* Realistický tmavý espresso porcelán pro světlý režim */
-  --porcelain-base: #331f16;
-  --porcelain-mid: #4a2f22;
-  --porcelain-highlight: #6e4735;
-  --porcelain-shadow: #1c0e08;
 }
 
 /* Krémové tmavé téma */
@@ -46,16 +41,17 @@
   --primary-hover: #dc9b6b;
   --accent: #e59d67;
 
-  /* Šálek v tmavém režimu světlejší krémový */
-  --cup-theme-color: #e2d2c1;
-  --cup-rim-color: #cbb9a6;
-  --cup-liquid-color: #572e18;
-  --cup-saucer-color: #5a4b41;
+  /* Porcelánový šálek - tmavý režim */
+  --porcelain-base: #dfd1bf;
+  --porcelain-mid: #eee2d3;
+  --porcelain-highlight: #ffffff;
+  --porcelain-shadow: #9e8d7c;
 
+  /* Kávová zrnka - tmavý režim (tón v tónu s nízkým kontrastem) */
   --bean-active: #dca073;
+  --bean-line-active: #b87b4f;
   --bean-inactive: #42362d;
-  --bean-line-active: #27201b;
-  --bean-line-inactive: #57483d;
+  --bean-line-inactive: #312720;
 
   --heart-active: #ff5252;
   --heart-inactive: #4b3d34;
@@ -63,60 +59,6 @@
   --treasury-bg: #241d18;
   --bottom-bar-bg: rgba(39, 32, 27, 0.94);
   --shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-
-  /* Realistický světlý krémový porcelán pro tmavý režim */
-  --porcelain-base: #dfd1bf;
-  --porcelain-mid: #eee2d3;
-  --porcelain-highlight: #ffffff;
-  --porcelain-shadow: #9e8d7c;
-}
-
-/* Úprava tříd pro velký šálek */
-.cup-svg {
-  width: 270px;
-  height: 220px;
-  overflow: visible;
-  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.12));
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.cup-big:hover .cup-svg {
-  transform: scale(1.03);
-}
-
-.cup-big:active .cup-svg {
-  transform: scale(0.96);
-}
-
-/* Zpětná kompatibilita animace stoupající páry */
-.steam-line {
-  fill: none;
-  stroke: var(--text-muted);
-  stroke-width: 5.5;
-  stroke-linecap: round;
-  opacity: 0;
-  animation: steamRise 3.2s infinite linear;
-}
-
-.steam-1 { animation-delay: 0s; }
-.steam-2 { animation-delay: 1.1s; }
-.steam-3 { animation-delay: 2.2s; }
-
-@keyframes steamRise {
-  0% {
-    transform: translateY(8px);
-    opacity: 0;
-  }
-  35% {
-    opacity: 0.55;
-  }
-  75% {
-    opacity: 0.25;
-  }
-  100% {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
 }
 
 * {
@@ -134,7 +76,7 @@ body {
   justify-content: center;
   min-height: 100vh;
   padding: 14px;
-  font-size: 1.05rem; /* Zvětšení základního písma */
+  font-size: 1.05rem;
   line-height: 1.45;
   transition: background-color 0.3s, color 0.3s;
 }
@@ -151,7 +93,7 @@ body {
 .hidden { display: none !important; }
 
 .content-with-bottom-bar {
-  padding-bottom: 74px; /* Prostor pro fixní dolní lištu */
+  padding-bottom: 74px;
 }
 
 /* Horní lišta */
@@ -200,7 +142,7 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* Kávový štítek */
+/* Kávový štítek s tenkým pevným rámečkem */
 .coffee-badge {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -298,55 +240,41 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 10px 0;
+  margin: 12px 0;
 }
 .cup-big {
   cursor: pointer;
   text-align: center;
   transition: transform 0.15s ease;
 }
-.cup-big:active {
-  transform: scale(0.95);
+.cup-big:hover .cup-svg {
+  transform: scale(1.03);
+}
+.cup-big:active .cup-svg {
+  transform: scale(0.96);
 }
 .cup-svg {
-  width: 175px;
-  height: 145px;
+  width: 270px;
+  height: 220px;
   overflow: visible;
-}
-.cup-saucer {
-  fill: var(--cup-saucer-color);
-}
-.cup-handle {
-  fill: none;
-  stroke: var(--cup-theme-color);
-  stroke-width: 10;
-  stroke-linecap: round;
-}
-.cup-body {
-  fill: var(--cup-theme-color);
-}
-.cup-rim {
-  fill: var(--cup-rim-color);
-}
-.cup-liquid {
-  fill: var(--cup-liquid-color);
-  transition: fill 0.35s ease;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.15));
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .cup-click-label {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--primary);
-  margin-top: 6px;
+  margin-top: 10px;
 }
 
 /* Animovaná pára */
 .steam-line {
   fill: none;
   stroke: var(--text-muted);
-  stroke-width: 3;
+  stroke-width: 3.5;
   stroke-linecap: round;
   opacity: 0;
-  animation: steamRise 3s infinite linear;
+  animation: steamRise 3.2s infinite linear;
 }
 .steam-1 { animation-delay: 0s; }
 .steam-2 { animation-delay: 1.1s; }
@@ -354,17 +282,17 @@ body {
 
 @keyframes steamRise {
   0% {
-    transform: translateY(10px);
+    transform: translateY(8px);
     opacity: 0;
   }
   35% {
-    opacity: 0.6;
+    opacity: 0.55;
   }
   75% {
-    opacity: 0.3;
+    opacity: 0.25;
   }
   100% {
-    transform: translateY(-16px);
+    transform: translateY(-20px);
     opacity: 0;
   }
 }
@@ -436,7 +364,7 @@ body {
 }
 .treasury-row b { color: var(--text-main); }
 
-/* Fixní dolní lišta */
+/* Dolní lišta */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -473,7 +401,112 @@ body {
   background: var(--treasury-bg);
 }
 
-/* Formuláře a tlačítka */
+/* Kartotéka káv v administraci */
+.coffee-history-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+.coffee-card-item {
+  background: var(--bg-app);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  transition: border-color 0.2s;
+}
+.coffee-card-item.is-active {
+  border: 2px solid var(--accent);
+  background: var(--card-bg);
+}
+.coffee-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.coffee-card-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.active-pill {
+  font-size: 0.65rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+.coffee-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.85rem;
+}
+.coffee-card-stats b {
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+.coffee-card-stats .hearts {
+  color: var(--heart-active);
+  letter-spacing: 1px;
+}
+.coffee-card-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--card-border);
+}
+.coffee-profile-row {
+  display: flex;
+  gap: 14px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.card-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+.btn-small {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.dropdown-arrow {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+.dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+.rating-user-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 0.95rem;
+  border-bottom: 1px dashed var(--card-border);
+}
+.rating-user-row:last-child {
+  border-bottom: none;
+}
+.rating-user-hearts {
+  color: var(--heart-active);
+  letter-spacing: 2px;
+  font-size: 1.05rem;
+}
+
+/* Vstupy a formuláře */
 .input-group {
   display: flex;
   flex-direction: column;
@@ -535,175 +568,4 @@ input[type="text"], input[type="password"], input[type="number"] {
   width: 55px;
   padding: 6px;
   font-size: 0.9rem;
-}
-
-/* Karta přehledu hodnocení v adminu */
-.rating-summary-card {
-  margin-bottom: 14px;
-}
-
-.rating-summary-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-}
-
-.rating-average-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.avg-score {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--primary);
-}
-
-.avg-hearts {
-  font-size: 1.25rem;
-  color: var(--heart-active);
-  letter-spacing: 2px;
-}
-
-.avg-count {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
-.dropdown-arrow {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  transition: transform 0.2s;
-}
-
-.dropdown-arrow.rotated {
-  transform: rotate(180deg);
-}
-
-.rating-detail-divider {
-  height: 1px;
-  background: var(--card-border);
-  margin: 12px 0 8px 0;
-}
-
-.rating-user-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  font-size: 0.95rem;
-  border-bottom: 1px dashed var(--card-border);
-}
-
-.rating-user-row:last-child {
-  border-bottom: none;
-}
-
-.rating-user-hearts {
-  color: var(--heart-active);
-  letter-spacing: 2px;
-  font-size: 1.05rem;
-}
-
-.rating-user-empty {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  font-style: italic;
-}
-
-/* Kartotéka káv v administraci */
-.coffee-history-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.coffee-card-item {
-  background: var(--bg-app);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
-  padding: 12px 14px;
-  transition: border-color 0.2s;
-}
-
-.coffee-card-item.is-active {
-  border: 2px solid var(--accent);
-  background: var(--card-bg);
-}
-
-.coffee-card-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  cursor: pointer;
-}
-
-.coffee-card-title {
-  font-weight: 800;
-  font-size: 1.05rem;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.active-pill {
-  font-size: 0.65rem;
-  background: var(--accent);
-  color: #fff;
-  padding: 2px 6px;
-  border-radius: 6px;
-  text-transform: uppercase;
-  font-weight: 800;
-}
-
-.coffee-card-stats {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-  font-size: 0.85rem;
-}
-
-.coffee-card-stats b {
-  font-size: 1.1rem;
-  color: var(--primary);
-}
-
-.coffee-card-stats .hearts {
-  color: var(--heart-active);
-  letter-spacing: 1px;
-}
-
-.coffee-card-details {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--card-border);
-}
-
-.coffee-profile-row {
-  display: flex;
-  gap: 14px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
-
-.card-actions {
-  margin-top: 10px;
-  display: flex;
-  gap: 8px;
-}
-
-.btn-small {
-  padding: 6px 10px;
-  font-size: 0.8rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 700;
 }
