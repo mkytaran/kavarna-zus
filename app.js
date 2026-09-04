@@ -171,10 +171,12 @@ function renderBeansMeter(containerId, value) {
 }
 
 function renderCoffeeBadge() {
-  document.getElementById("coffee-name").textContent = state.kava.nazev;
-  renderBeansMeter("beans-acidita", state.kava.acidita);
-  renderBeansMeter("beans-intenzita", state.kava.intenzita);
-  renderBeansMeter("beans-prazeni", state.kava.prazeni);
+  if (!state.kava) return;
+  
+  document.getElementById("coffee-name").textContent = state.kava.nazev || "Výběrová káva";
+  renderBeansMeter("beans-acidita", state.kava.acidita || 3);
+  renderBeansMeter("beans-intenzita", state.kava.intenzita || 3);
+  renderBeansMeter("beans-prazeni", state.kava.prazeni || 3);
 }
 
 // 5. HODNOCENÍ VÁZANÉ NA AKTIVNÍ KÁVU
