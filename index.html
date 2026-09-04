@@ -90,26 +90,111 @@
         </div>
       </div>
 
-      <!-- Interaktivní velký šálek s párou -->
+     <!-- Interaktivní velký šálek s podšálkem a párou -->
       <div class="cup-center">
         <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu">
-          <svg viewBox="0 0 160 140" class="cup-svg">
+          <svg viewBox="0 0 200 160" class="cup-svg">
+            <defs>
+              <!-- Podkladový stín pod šálkem -->
+              <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="4" />
+                <feOffset dx="0" dy="6" result="offsetblur" />
+                <feComponentTransfer><feFuncA type="linear" slope="0.3" /></feComponentTransfer>
+                <feMerge>
+                  <feMergeNode />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+
+              <!-- Gradienty pro podšálek -->
+              <linearGradient id="saucer-rim-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="var(--porcelain-highlight)" />
+                <stop offset="60%" stop-color="var(--porcelain-mid)" />
+                <stop offset="100%" stop-color="var(--porcelain-shadow)" />
+              </linearGradient>
+
+              <!-- Gradient pro tělo porcelánu -->
+              <linearGradient id="porcelain-body" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="var(--porcelain-mid)" />
+                <stop offset="18%" stop-color="var(--porcelain-highlight)" />
+                <stop offset="60%" stop-color="var(--porcelain-base)" />
+                <stop offset="100%" stop-color="var(--porcelain-shadow)" />
+              </linearGradient>
+
+              <!-- Gradient pro ucho hrnku -->
+              <linearGradient id="handle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="var(--porcelain-highlight)" />
+                <stop offset="50%" stop-color="var(--porcelain-mid)" />
+                <stop offset="100%" stop-color="var(--porcelain-shadow)" />
+              </linearGradient>
+
+              <!-- Hloubka kávy a cremy -->
+              <radialGradient id="coffee-crema" cx="42%" cy="40%" r="60%">
+                <stop offset="0%" stop-color="#b5672d" />
+                <stop offset="30%" stop-color="#703615" />
+                <stop offset="75%" stop-color="#36170a" />
+                <stop offset="100%" stop-color="#1c0a04" />
+              </radialGradient>
+            </defs>
+
             <!-- Animovaná stoupající pára -->
             <g class="steam-group">
-              <path class="steam-line steam-1" d="M60 42 Q 52 30 60 18 Q 68 8 60 0" />
-              <path class="steam-line steam-2" d="M80 40 Q 72 26 80 14 Q 88 4 80 -4" />
-              <path class="steam-line steam-3" d="M100 42 Q 92 30 100 18 Q 108 8 100 0" />
+              <path class="steam-line steam-1" d="M78 40 Q 70 26 78 12 Q 86 0 78 -10" />
+              <path class="steam-line steam-2" d="M100 38 Q 92 22 100 8 Q 108 -4 100 -16" />
+              <path class="steam-line steam-3" d="M122 40 Q 114 26 122 12 Q 130 0 122 -10" />
             </g>
-            <!-- Podšálek -->
-            <ellipse cx="80" cy="126" rx="55" ry="10" class="cup-saucer" />
-            <!-- Ucho -->
-            <path d="M 115 56 C 146 56, 146 98, 112 98" class="cup-handle" />
-            <!-- Tělo hrnku -->
-            <path d="M 32 46 L 45 110 C 47 118, 113 118, 115 110 L 128 46 Z" class="cup-body" />
-            <!-- Vrchní lem hrnku -->
-            <ellipse cx="80" cy="46" rx="48" ry="13" class="cup-rim" />
-            <!-- Hladina kávy -->
-            <ellipse id="liquid" cx="80" cy="48" rx="43" ry="10" class="cup-liquid" />
+
+            <!-- PODŠÁLEK -->
+            <g id="saucer-layer">
+              <!-- Spodní stín na stole pod podšálkem -->
+              <ellipse cx="100" cy="142" rx="72" ry="12" fill="rgba(0,0,0,0.18)" />
+              <!-- Lem podšálku -->
+              <ellipse cx="100" cy="138" rx="84" ry="15" fill="url(#saucer-rim-grad)" filter="url(#soft-shadow)" />
+              <!-- Vyvýšený středový rantl podšálku -->
+              <ellipse cx="100" cy="138" rx="74" ry="12" fill="var(--porcelain-base)" />
+              <ellipse cx="100" cy="139" rx="52" ry="7.5" fill="var(--porcelain-shadow)" opacity="0.6" />
+              <ellipse cx="100" cy="138" rx="50" ry="7" fill="var(--porcelain-mid)" />
+            </g>
+
+            <!-- UCHO ŠÁLKU (vykresleno za tělem) -->
+            <g id="handle-layer">
+              <path d="M 134 68 C 176 68, 172 118, 126 118" 
+                    fill="none" 
+                    stroke="url(#handle-grad)" 
+                    stroke-width="13" 
+                    stroke-linecap="round" />
+              <!-- Lesk na uchu -->
+              <path d="M 134 67 C 172 67, 168 116, 128 116" 
+                    fill="none" 
+                    stroke="rgba(255,255,255,0.25)" 
+                    stroke-width="3" 
+                    stroke-linecap="round" />
+            </g>
+
+            <!-- TĚLO ŠÁLKU -->
+            <g id="cup-body-layer">
+              <!-- Keramické tělo se zúžením na patku -->
+              <path d="M 46 56 
+                       C 50 98, 62 133, 80 137
+                       L 120 137 
+                       C 138 133, 150 98, 154 56 
+                       Z" 
+                    fill="url(#porcelain-body)" />
+
+              <!-- Odraz světla / vertikální odlesk po zakřivení -->
+              <path d="M 64 57 C 67 92, 73 124, 86 135 C 80 133, 73 100, 71 58 Z" 
+                    fill="rgba(255,255,255,0.18)" />
+
+              <!-- Vnitřní porcelánový okraj -->
+              <ellipse cx="100" cy="56" rx="54" ry="14" fill="var(--porcelain-shadow)" />
+              <ellipse cx="100" cy="56" rx="52" ry="13" fill="var(--porcelain-highlight)" />
+
+              <!-- Hladina čerstvého espressa s cremou -->
+              <ellipse id="liquid" cx="100" cy="58" rx="48" ry="11" fill="url(#coffee-crema)" />
+
+              <!-- Jemný lesk cremy -->
+              <ellipse cx="90" cy="56" rx="28" ry="4" fill="rgba(255, 230, 190, 0.25)" />
+            </g>
           </svg>
           <div class="cup-click-label">Dnes piju kávu ☕</div>
         </div>
@@ -191,6 +276,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=1.1"></script>
+  <script src="app.js?v=1.2"></script>
 </body>
 </html>
