@@ -242,52 +242,40 @@
     <section id="admin-view" class="hidden content-with-bottom-bar">
       <h2>Administrace</h2>
 
-      <!-- KARTA HODNOCENÍ KÁVY V ADMINU -->
-      <div class="card rating-summary-card">
-        <div class="rating-summary-header" id="toggle-rating-detail">
-          <div>
-            <div class="badge-tag">HODNOCENÍ AKTUÁLNÍ KÁVY</div>
-            <div class="rating-average-row">
-              <span class="avg-score" id="admin-avg-score">0.0</span>
-              <span class="avg-hearts" id="admin-avg-hearts">♥♥♥♥♥</span>
-              <span class="avg-count" id="admin-rating-count">(0 kafařů)</span>
-            </div>
-          </div>
-          <span class="dropdown-arrow" id="rating-arrow">▼</span>
-        </div>
-
-        <!-- Rozklikávací detail jednotlivých členů -->
-        <div id="rating-detail-list" class="rating-detail-list hidden">
-          <div class="rating-detail-divider"></div>
-          <div id="rating-items-container"></div>
-        </div>
-      </div>
-      
+      <!-- PŘEHLED A KARTOTÉKA VŠECH KÁV -->
       <div class="card">
-        <h3>Nastavení kávového štítku</h3>
-        <div class="input-group">
-          <label>Název kávy</label>
-          <input type="text" id="admin-coffee-name">
+        <div class="badge-tag">HISTORIE & HODNOCENÍ VŠECH KÁV</div>
+        <div id="coffee-history-list" class="coffee-history-container">
+          <!-- Zde se dynamicky vykreslí seznam všech káv s průměry a detaily -->
         </div>
-        <div class="input-group">
-          <label>Acidita (1–5)</label>
-          <input type="number" id="admin-acidita" min="1" max="5">
-        </div>
-        <div class="input-group">
-          <label>Intenzita (1–5)</label>
-          <input type="number" id="admin-intenzita" min="1" max="5">
-        </div>
-        <div class="input-group">
-          <label>Stupeň pražení (1–5)</label>
-          <input type="number" id="admin-prazeni" min="1" max="5">
-        </div>
-        <div class="checkbox-group" style="margin-top: 10px;">
-          <input type="checkbox" id="admin-reset-ratings">
-          <label for="admin-reset-ratings">Nová káva (vynulovat stávající hodnocení)</label>
-        </div>
-        <button id="admin-save-coffee" class="btn btn-primary">Uložit kávu</button>
       </div>
 
+      <!-- FORMULÁŘ: NASADIT NOVOU / UPRAVIT KÁVU -->
+      <div class="card">
+        <h3 id="coffee-form-title">Nasadit novou kávu do mlýnku</h3>
+        <input type="hidden" id="admin-coffee-id" value="new">
+        
+        <div class="input-group">
+          <label for="admin-coffee-name">Název kávy & původ</label>
+          <input type="text" id="admin-coffee-name" placeholder="např. Kolumbie Supremo">
+        </div>
+        <div class="input-group">
+          <label for="admin-acidita">Acidita (1–5)</label>
+          <input type="number" id="admin-acidita" min="1" max="5" value="3">
+        </div>
+        <div class="input-group">
+          <label for="admin-intenzita">Intenzita (1–5)</label>
+          <input type="number" id="admin-intenzita" min="1" max="5" value="3">
+        </div>
+        <div class="input-group">
+          <label for="admin-prazeni">Stupeň pražení (1–5)</label>
+          <input type="number" id="admin-prazeni" min="1" max="5" value="3">
+        </div>
+        
+        <button id="admin-save-coffee" class="btn btn-primary">Uložit a nasadit do kávovaru</button>
+      </div>
+
+      <!-- Tabulka kafařů -->
       <div class="card">
         <h3>Kafaři a platby</h3>
         <div style="overflow-x: auto;">
@@ -309,6 +297,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=1.4"></script>
+  <script src="app.js?v=1.5"></script>
 </body>
 </html>
