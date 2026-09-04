@@ -203,7 +203,7 @@ body {
 /* Kávový štítek */
 .coffee-badge {
   background: var(--card-bg);
-  border: 1.5px dashed var(--accent);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius);
   padding: 18px;
   box-shadow: var(--shadow);
