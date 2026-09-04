@@ -1,6 +1,7 @@
 // URL vašeho Google Apps Script Web App
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
 
+// Popisky hodnocení kávy srdíčky
 const RATING_DESCRIPTIONS = {
   1: "1 – Nechutná mi",
   2: "2 – Nic moc",
@@ -9,7 +10,7 @@ const RATING_DESCRIPTIONS = {
   5: "5 – Skvělý kafe"
 };
 
-// SVG šablona jednoho kávového zrna se středovou linkou
+// SVG šablona jednoho kávového zrna se středovou rýhou
 function createBeanSVG(isActive) {
   return `
     <svg viewBox="0 0 30 30" class="bean-svg ${isActive ? 'active' : 'inactive'}">
@@ -32,8 +33,16 @@ let state = {
   clicksInSession: 0
 };
 
-// 1. TÉMA
+// Registrace Service Workeru pro PWA instalaci
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW reg failed: ", err));
+  });
+}
+
+// 1. SPRÁVA BAREVNÉHO REŽIMU (Světlý / Tmavý / Systém)
 const themeBtn = document.getElementById("theme-btn");
+
 function initTheme() {
   const saved = localStorage.getItem("zus_theme") || "system";
   applyTheme(saved);
@@ -61,58 +70,23 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e =
   }
 });
 
-// 2. NAČÍTÁNÍ DAT
-async function loadData() {
-  try {
-    const res = await fetch(`${SCRIPT_URL}?action=getData`);
-    const data = await res.json();
-    state.users = data.users || [];
-    state.finance = data.finance || {};
-    if (data.kava) state.kava = data.kava;
-
-    renderCoffeeBadge();
-    renderFinance();
-    checkAutoLogin();
-  } catch (err) {
-    console.error("Chyba při stahování dat:", err);
-    checkAutoLogin();
-  }
-}
-
-function checkAutoLogin() {
+// 2. OKAMŽITÉ PŘIHLÁŠENÍ ZE ZÁLOHY (Bez probliknutí)
+function tryInstantAutoLogin() {
   const savedUser = localStorage.getItem("zus_saved_user");
-  if (savedUser) {
+  if (!savedUser) return;
+
+  try {
     const parsed = JSON.parse(savedUser);
-    const user = state.users.find(u => u.name.toLowerCase() === parsed.name.toLowerCase() && String(u.pin) === String(parsed.pin));
-    if (user) {
-      loginUser(user);
+    if (parsed && parsed.name && parsed.pin) {
+      state.currentUser = parsed;
+      showMainScreen(parsed);
     }
+  } catch (e) {
+    localStorage.removeItem("zus_saved_user");
   }
 }
 
-// 3. PŘIHLÁŠENÍ & ODHLÁŠENÍ
-document.getElementById("login-btn").addEventListener("click", () => {
-  const name = document.getElementById("login-name").value.trim();
-  const pin = document.getElementById("login-pin").value.trim();
-  const remember = document.getElementById("remember-me").checked;
-
-  const user = state.users.find(u => u.name.toLowerCase() === name.toLowerCase() && String(u.pin) === pin);
-  if (user) {
-    if (remember) {
-      localStorage.setItem("zus_saved_user", JSON.stringify({ name: user.name, pin: user.pin }));
-    } else {
-      localStorage.removeItem("zus_saved_user");
-    }
-    loginUser(user);
-  } else {
-    alert("Nesprávné jméno nebo PIN.");
-  }
-});
-
-function loginUser(user) {
-  state.currentUser = user;
-  state.clicksInSession = 0;
-
+function showMainScreen(user) {
   document.getElementById("login-view").classList.add("hidden");
   document.getElementById("main-view").classList.remove("hidden");
   document.getElementById("logout-btn").classList.remove("hidden");
@@ -132,14 +106,70 @@ function loginUser(user) {
   initRating();
 }
 
+// 3. NAČTENÍ DAT ZE SERVERU A SYNCHRONIZACE
+async function loadData() {
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=getData`);
+    const data = await res.json();
+    state.users = data.users || [];
+    state.finance = data.finance || {};
+    if (data.kava) state.kava = data.kava;
+
+    renderCoffeeBadge();
+    renderFinance();
+
+    // Pokud je uživatel přihlášen, aktualizujeme jeho data z tabulky
+    const savedUser = localStorage.getItem("zus_saved_user");
+    if (savedUser) {
+      const parsed = JSON.parse(savedUser);
+      const freshUser = state.users.find(
+        u => u.name.toLowerCase() === parsed.name.toLowerCase() && String(u.pin) === String(parsed.pin)
+      );
+
+      if (freshUser) {
+        state.currentUser = freshUser;
+        localStorage.setItem("zus_saved_user", JSON.stringify(freshUser));
+        updateCupsView();
+      }
+    }
+  } catch (err) {
+    console.error("Chyba při synchronizaci se serverem:", err);
+  }
+}
+
+// Manuální přihlášení
+document.getElementById("login-btn").addEventListener("click", () => {
+  const name = document.getElementById("login-name").value.trim();
+  const pin = document.getElementById("login-pin").value.trim();
+  const remember = document.getElementById("remember-me").checked;
+
+  const user = state.users.find(
+    u => u.name.toLowerCase() === name.toLowerCase() && String(u.pin) === pin
+  );
+
+  if (user) {
+    state.currentUser = user;
+    state.clicksInSession = 0;
+    if (remember) {
+      localStorage.setItem("zus_saved_user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("zus_saved_user");
+    }
+    showMainScreen(user);
+  } else {
+    alert("Nesprávné jméno nebo PIN.");
+  }
+});
+
+// Odhlášení
 document.getElementById("logout-btn").addEventListener("click", () => {
   state.currentUser = null;
   state.clicksInSession = 0;
   localStorage.removeItem("zus_saved_user");
+  document.getElementById("login-name").value = "";
   document.getElementById("login-pin").value = "";
   document.getElementById("logout-btn").classList.add("hidden");
   document.getElementById("bottom-bar").classList.add("hidden");
-  document.getElementById("admin-switch-btn").classList.add("hidden");
   document.getElementById("undo-btn").classList.add("hidden");
   document.getElementById("main-view").classList.add("hidden");
   document.getElementById("admin-view").classList.add("hidden");
@@ -162,7 +192,7 @@ function renderCoffeeBadge() {
   renderBeansMeter("beans-prazeni", state.kava.prazeni);
 }
 
-// 5. HODNOCENÍ SRDÍČKY
+// 5. HODNOCENÍ VELKÝMI SRDÍČKY
 function initRating() {
   const hearts = document.querySelectorAll("#hearts-container .heart-btn");
   const savedRating = localStorage.getItem(`zus_rating_${state.kava.nazev}`) || 0;
@@ -190,7 +220,7 @@ function paintHearts(val) {
   document.getElementById("rating-text").textContent = RATING_DESCRIPTIONS[val] || "Klepni na srdíčko";
 }
 
-// 6. ODKLIKÁVÁNÍ KÁVY & POJISTKA
+// 6. ODKLIKNUTÍ VYPITÉ KÁVY & POJISTKA PROTI PŘEKLIKNUTÍ
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
 
@@ -199,7 +229,7 @@ cupAction.addEventListener("click", () => {
   if (!u) return;
 
   if (u.drank >= u.prepaid) {
-    alert("Všechny předplacené kávy máš vyčerpané. Dej vědět správci kasy.");
+    alert("Všechny předplacené kávy máš vyčerpané. Nahlaste správci nové předplatné.");
     return;
   }
 
@@ -209,6 +239,7 @@ cupAction.addEventListener("click", () => {
   updateCupsView();
   syncDrankToServer(u.id, u.drank);
 
+  // Vrácení umožníme pouze při 2 a více kliknutích během aktuální relace
   if (state.clicksInSession > 1) {
     undoBtn.classList.remove("hidden");
   }
@@ -222,6 +253,7 @@ undoBtn.addEventListener("click", () => {
     updateCupsView();
     syncDrankToServer(u.id, u.drank);
 
+    // Pokud zbývá pouze 1 legitimní káva, tlačítko vrátit skryjeme
     if (state.clicksInSession <= 1) {
       undoBtn.classList.add("hidden");
     }
@@ -235,11 +267,11 @@ async function syncDrankToServer(userId, drank) {
       body: JSON.stringify({ action: "drinkCoffee", id: userId, drank: drank })
     });
   } catch (e) {
-    console.error("Chyba při ukládání:", e);
+    console.error("Chyba při ukládání kávy:", e);
   }
 }
 
-// 7. DYNAMICKÝ POČET ŠÁLKŮ PODLE PŘEDPLATNÉHO
+// 7. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ PODLE VÝŠE PŘEDPLATNÉHO
 function updateCupsView() {
   const u = state.currentUser;
   const totalCups = u.prepaid || 0;
@@ -254,7 +286,6 @@ function updateCupsView() {
     </svg>
   `;
 
-  // Vygeneruje tolik šálků, na kolik má dotyčný předplatné
   for (let i = 1; i <= totalCups; i++) {
     const div = document.createElement("div");
     div.classList.add("mini-cup");
@@ -270,10 +301,12 @@ function updateCupsView() {
 
   // Velký šálek
   const liquid = document.getElementById("liquid");
-  if (u.drank >= totalCups) {
-    liquid.style.opacity = "0.2";
-  } else {
-    liquid.style.opacity = "1";
+  if (liquid) {
+    if (u.drank >= totalCups) {
+      liquid.style.opacity = "0.15";
+    } else {
+      liquid.style.opacity = "1";
+    }
   }
 }
 
@@ -358,5 +391,7 @@ document.getElementById("admin-save-coffee").addEventListener("click", async () 
   alert("Kávový štítek aktualizován!");
 });
 
+// Inicializace
 initTheme();
+tryInstantAutoLogin();
 loadData();
