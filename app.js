@@ -1,7 +1,7 @@
 // URL vašeho Google Apps Script Web App
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
 
-// Popisky hodnocení kávy srdíčky
+// Popisky pro hodnocení srdíčky
 const RATING_DESCRIPTIONS = {
   1: "1 – Nechutná mi",
   2: "2 – Nic moc",
@@ -33,14 +33,14 @@ let state = {
   clicksInSession: 0
 };
 
-// Registrace Service Workeru pro PWA instalaci
+// Registrace Service Workeru pro PWA
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW reg failed: ", err));
   });
 }
 
-// 1. SPRÁVA BAREVNÉHO REŽIMU (Světlý / Tmavý / Systém)
+// 1. TÉMA (Světlý / Tmavý / Systém)
 const themeBtn = document.getElementById("theme-btn");
 
 function initTheme() {
@@ -70,7 +70,7 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e =
   }
 });
 
-// 2. OKAMŽITÉ PŘIHLÁŠENÍ ZE ZÁLOHY (Bez probliknutí)
+// 2. OKAMŽITÉ PŘIHLÁŠENÍ ZE ZÁLOHY (Bez problikávání)
 function tryInstantAutoLogin() {
   const savedUser = localStorage.getItem("zus_saved_user");
   if (!savedUser) return;
@@ -106,7 +106,7 @@ function showMainScreen(user) {
   initRating();
 }
 
-// 3. NAČTENÍ DAT ZE SERVERU A SYNCHRONIZACE
+// 3. SYNCHRONIZACE DAT ZE SERVERU
 async function loadData() {
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getData`);
@@ -118,7 +118,7 @@ async function loadData() {
     renderCoffeeBadge();
     renderFinance();
 
-    // Pokud je uživatel přihlášen, aktualizujeme jeho data z tabulky
+    // Pokud je někdo přihlášený, aktualizujeme jeho data z tabulky
     const savedUser = localStorage.getItem("zus_saved_user");
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
@@ -130,6 +130,7 @@ async function loadData() {
         state.currentUser = freshUser;
         localStorage.setItem("zus_saved_user", JSON.stringify(freshUser));
         updateCupsView();
+        initRating();
       }
     }
   } catch (err) {
@@ -192,17 +193,37 @@ function renderCoffeeBadge() {
   renderBeansMeter("beans-prazeni", state.kava.prazeni);
 }
 
-// 5. HODNOCENÍ VELKÝMI SRDÍČKY
+// 5. HODNOCENÍ SRDÍČKY (S ukládáním do tabulky)
 function initRating() {
   const hearts = document.querySelectorAll("#hearts-container .heart-btn");
-  const savedRating = localStorage.getItem(`zus_rating_${state.kava.nazev}`) || 0;
-  paintHearts(savedRating);
+  const currentVal = state.currentUser ? (state.currentUser.rating || 0) : 0;
+  paintHearts(currentVal);
 
   hearts.forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
       const val = Number(btn.getAttribute("data-val"));
-      localStorage.setItem(`zus_rating_${state.kava.nazev}`, val);
+      if (!state.currentUser) return;
+
+      state.currentUser.rating = val;
       paintHearts(val);
+
+      const u = state.users.find(x => x.id == state.currentUser.id);
+      if (u) u.rating = val;
+
+      localStorage.setItem("zus_saved_user", JSON.stringify(state.currentUser));
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            action: "saveRating",
+            id: state.currentUser.id,
+            rating: val
+          })
+        });
+      } catch (err) {
+        console.error("Chyba při ukládání hodnocení:", err);
+      }
     };
   });
 }
@@ -239,7 +260,6 @@ cupAction.addEventListener("click", () => {
   updateCupsView();
   syncDrankToServer(u.id, u.drank);
 
-  // Vrácení umožníme pouze při 2 a více kliknutích během aktuální relace
   if (state.clicksInSession > 1) {
     undoBtn.classList.remove("hidden");
   }
@@ -253,7 +273,6 @@ undoBtn.addEventListener("click", () => {
     updateCupsView();
     syncDrankToServer(u.id, u.drank);
 
-    // Pokud zbývá pouze 1 legitimní káva, tlačítko vrátit skryjeme
     if (state.clicksInSession <= 1) {
       undoBtn.classList.add("hidden");
     }
@@ -321,7 +340,7 @@ function renderFinance() {
   document.getElementById("fin-rozdil").textContent = `${rozdil} Kč`;
 }
 
-// 9. ADMIN PANEL
+// 9. ADMIN PANEL & VÝPOČET PRŮMĚRU HODNOCENÍ
 document.getElementById("admin-switch-btn").addEventListener("click", () => {
   document.getElementById("main-view").classList.add("hidden");
   document.getElementById("bottom-bar").classList.add("hidden");
@@ -331,7 +350,9 @@ document.getElementById("admin-switch-btn").addEventListener("click", () => {
   document.getElementById("admin-acidita").value = state.kava.acidita;
   document.getElementById("admin-intenzita").value = state.kava.intenzita;
   document.getElementById("admin-prazeni").value = state.kava.prazeni;
+  document.getElementById("admin-reset-ratings").checked = false;
 
+  renderAdminRatingSummary();
   renderAdminUsers();
 });
 
@@ -340,6 +361,60 @@ document.getElementById("admin-back-btn").addEventListener("click", () => {
   document.getElementById("main-view").classList.remove("hidden");
   document.getElementById("bottom-bar").classList.remove("hidden");
 });
+
+// Rozkliknutí přehledu hodnocení v adminu
+document.getElementById("toggle-rating-detail").addEventListener("click", () => {
+  const detail = document.getElementById("rating-detail-list");
+  const arrow = document.getElementById("rating-arrow");
+  detail.classList.toggle("hidden");
+  arrow.classList.toggle("rotated");
+});
+
+function renderAdminRatingSummary() {
+  const ratedUsers = state.users.filter(u => u.rating && u.rating > 0);
+  const totalRatings = ratedUsers.length;
+  
+  let avg = 0;
+  if (totalRatings > 0) {
+    const sum = ratedUsers.reduce((acc, u) => acc + u.rating, 0);
+    avg = (sum / totalRatings).toFixed(1);
+  }
+
+  document.getElementById("admin-avg-score").textContent = avg;
+  document.getElementById("admin-rating-count").textContent = `(${totalRatings} hodnocení)`;
+
+  const roundAvg = Math.round(Number(avg));
+  let heartsStr = "";
+  for (let i = 1; i <= 5; i++) {
+    heartsStr += i <= roundAvg ? "♥" : "♡";
+  }
+  document.getElementById("admin-avg-hearts").textContent = heartsStr;
+
+  // Rozklikávací seznam kafařů
+  const container = document.getElementById("rating-items-container");
+  container.innerHTML = "";
+
+  state.users.forEach(u => {
+    const row = document.createElement("div");
+    row.className = "rating-user-row";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = u.name;
+
+    const valSpan = document.createElement("span");
+    if (u.rating && u.rating > 0) {
+      valSpan.className = "rating-user-hearts";
+      valSpan.textContent = "♥".repeat(u.rating) + "♡".repeat(5 - u.rating);
+    } else {
+      valSpan.className = "rating-user-empty";
+      valSpan.textContent = "nehodnotil(a)";
+    }
+
+    row.appendChild(nameSpan);
+    row.appendChild(valSpan);
+    container.appendChild(row);
+  });
+}
 
 function renderAdminUsers() {
   const tbody = document.getElementById("admin-user-list");
@@ -370,13 +445,25 @@ window.adminSaveUser = async function(id) {
   alert(`Uloženo: ${u.name}`);
 };
 
+// Uložení štítku kávy s možností vynulovat hodnocení
 document.getElementById("admin-save-coffee").addEventListener("click", async () => {
   state.kava.nazev = document.getElementById("admin-coffee-name").value;
   state.kava.acidita = Number(document.getElementById("admin-acidita").value);
   state.kava.intenzita = Number(document.getElementById("admin-intenzita").value);
   state.kava.prazeni = Number(document.getElementById("admin-prazeni").value);
+  const resetRatings = document.getElementById("admin-reset-ratings").checked;
+
+  if (resetRatings) {
+    state.users.forEach(u => u.rating = 0);
+    if (state.currentUser) {
+      state.currentUser.rating = 0;
+      localStorage.setItem("zus_saved_user", JSON.stringify(state.currentUser));
+    }
+    paintHearts(0);
+  }
 
   renderCoffeeBadge();
+  renderAdminRatingSummary();
 
   await fetch(SCRIPT_URL, {
     method: "POST",
@@ -385,13 +472,14 @@ document.getElementById("admin-save-coffee").addEventListener("click", async () 
       nazev: state.kava.nazev,
       acidita: state.kava.acidita,
       intenzita: state.kava.intenzita,
-      prazeni: state.kava.prazeni
+      prazeni: state.kava.prazeni,
+      resetRatings: resetRatings
     })
   });
   alert("Kávový štítek aktualizován!");
 });
 
-// Inicializace
+// START
 initTheme();
 tryInstantAutoLogin();
 loadData();

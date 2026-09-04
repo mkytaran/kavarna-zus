@@ -241,6 +241,27 @@
     <!-- ADMIN PANEL -->
     <section id="admin-view" class="hidden content-with-bottom-bar">
       <h2>Administrace</h2>
+
+      <!-- KARTA HODNOCENÍ KÁVY V ADMINU -->
+      <div class="card rating-summary-card">
+        <div class="rating-summary-header" id="toggle-rating-detail">
+          <div>
+            <div class="badge-tag">HODNOCENÍ AKTUÁLNÍ KÁVY</div>
+            <div class="rating-average-row">
+              <span class="avg-score" id="admin-avg-score">0.0</span>
+              <span class="avg-hearts" id="admin-avg-hearts">♥♥♥♥♥</span>
+              <span class="avg-count" id="admin-rating-count">(0 kafařů)</span>
+            </div>
+          </div>
+          <span class="dropdown-arrow" id="rating-arrow">▼</span>
+        </div>
+
+        <!-- Rozklikávací detail jednotlivých členů -->
+        <div id="rating-detail-list" class="rating-detail-list hidden">
+          <div class="rating-detail-divider"></div>
+          <div id="rating-items-container"></div>
+        </div>
+      </div>
       
       <div class="card">
         <h3>Nastavení kávového štítku</h3>
@@ -259,6 +280,10 @@
         <div class="input-group">
           <label>Stupeň pražení (1–5)</label>
           <input type="number" id="admin-prazeni" min="1" max="5">
+        </div>
+        <div class="checkbox-group" style="margin-top: 10px;">
+          <input type="checkbox" id="admin-reset-ratings">
+          <label for="admin-reset-ratings">Nová káva (vynulovat stávající hodnocení)</label>
         </div>
         <button id="admin-save-coffee" class="btn btn-primary">Uložit kávu</button>
       </div>
@@ -284,6 +309,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=1.3"></script>
+  <script src="app.js?v=1.4"></script>
 </body>
 </html>

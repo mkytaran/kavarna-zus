@@ -536,3 +536,81 @@ input[type="text"], input[type="password"], input[type="number"] {
   padding: 6px;
   font-size: 0.9rem;
 }
+
+/* Karta přehledu hodnocení v adminu */
+.rating-summary-card {
+  margin-bottom: 14px;
+}
+
+.rating-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rating-average-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.avg-score {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.avg-hearts {
+  font-size: 1.25rem;
+  color: var(--heart-active);
+  letter-spacing: 2px;
+}
+
+.avg-count {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.dropdown-arrow {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.rating-detail-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 12px 0 8px 0;
+}
+
+.rating-user-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 0.95rem;
+  border-bottom: 1px dashed var(--card-border);
+}
+
+.rating-user-row:last-child {
+  border-bottom: none;
+}
+
+.rating-user-hearts {
+  color: var(--heart-active);
+  letter-spacing: 2px;
+  font-size: 1.05rem;
+}
+
+.rating-user-empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
