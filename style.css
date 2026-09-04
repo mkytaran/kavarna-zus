@@ -73,8 +73,8 @@
 
 /* Úprava tříd pro velký šálek */
 .cup-svg {
-  width: 210px;
-  height: 170px;
+  width: 270px;
+  height: 220px;
   overflow: visible;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.12));
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -92,7 +92,7 @@
 .steam-line {
   fill: none;
   stroke: var(--text-muted);
-  stroke-width: 3.5;
+  stroke-width: 5.5;
   stroke-linecap: round;
   opacity: 0;
   animation: steamRise 3.2s infinite linear;
