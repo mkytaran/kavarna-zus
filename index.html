@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#d9cbbe">
+  <!-- Systémové přepínání barvy lišt pro Chrome/Android -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5eee6">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1c1714">
+
+  <!-- Podpora stavové lišty pro Apple iOS Safari PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
   <title>ZUŠkafe</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
@@ -46,7 +53,7 @@
     <!-- HLAVNÍ OBRAZOVKA -->
     <section id="main-view" class="hidden content-with-bottom-bar">
       
-      <!-- Kávový štítek -->
+      <!-- Kávový štítek s tenkým pevným ohraničením -->
       <div class="coffee-badge">
         <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
         <div class="badge-title" id="coffee-name">Brasil Pergamino Sul de Minas</div>
@@ -90,7 +97,7 @@
         </div>
       </div>
 
-   <!-- Velký integrovaný šálek s hlubokým porcelánovým podšálkem -->
+      <!-- Realistický šálek s podšálkem a difuzní stoupající párou -->
       <div class="cup-center">
         <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu">
           <svg viewBox="0 0 260 210" class="cup-svg">
@@ -109,7 +116,7 @@
                 <stop offset="100%" stop-color="rgba(0,0,0,0)" />
               </radialGradient>
 
-              <!-- Lem a vnitřní klenutí podšálku -->
+              <!-- Klenutí a fazeta podšálku -->
               <linearGradient id="saucer-body-grad" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stop-color="var(--porcelain-highlight)" />
                 <stop offset="25%" stop-color="var(--porcelain-mid)" />
@@ -139,33 +146,31 @@
                 <stop offset="75%" stop-color="#321406" />
                 <stop offset="100%" stop-color="#180702" />
               </radialGradient>
+
+              <!-- Rozostřovací filtr pro měkkou páru -->
+              <filter id="steam-blur" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3.2" />
+              </filter>
             </defs>
 
-            <!-- Animovaná stoupající pára -->
-            <g class="steam-group">
-              <path class="steam-line steam-1" d="M102 38 Q 92 22 102 8 Q 112 -6 102 -18" />
-              <path class="steam-line steam-2" d="M130 36 Q 120 18 130 2 Q 140 -12 130 -26" />
-              <path class="steam-line steam-3" d="M158 38 Q 148 22 158 8 Q 168 -6 158 -18" />
+            <!-- Realistická stoupající pára -->
+            <g class="steam-group" filter="url(#steam-blur)">
+              <path class="steam-puff steam-1" d="M104 46 C 94 36, 114 24, 102 12 C 90 2, 108 -10, 96 -24" />
+              <path class="steam-puff steam-2" d="M130 44 C 142 32, 120 20, 134 8 C 146 -4, 124 -16, 132 -28" />
+              <path class="steam-puff steam-3" d="M156 46 C 146 34, 166 22, 152 10 C 140 0, 158 -12, 148 -24" />
             </g>
 
-            <!-- 1. PODŠÁLEK -->
+            <!-- Podšálek -->
             <g id="saucer-complete">
-              <!-- Velký stín na stole -->
               <ellipse cx="130" cy="190" rx="115" ry="16" fill="url(#table-ambient)" />
-
-              <!-- Tělo talířku (zvednutý okraj) -->
               <ellipse cx="130" cy="172" rx="122" ry="24" fill="url(#saucer-body-grad)" />
-              
-              <!-- Vnitřní prohnutí talířku (mísa podšálku) -->
               <ellipse cx="130" cy="172" rx="108" ry="19" fill="var(--porcelain-base)" />
               <ellipse cx="130" cy="173" rx="102" ry="16.5" fill="var(--porcelain-shadow)" opacity="0.45" />
-
-              <!-- Zvýšené vybrání / lůžko pro šálek -->
               <ellipse cx="130" cy="171" rx="72" ry="11.5" fill="var(--porcelain-mid)" />
               <ellipse cx="130" cy="172" rx="66" ry="9" fill="var(--porcelain-shadow)" opacity="0.6" />
             </g>
 
-            <!-- 2. UCHO ŠÁLKU (v pozadí za tělem) -->
+            <!-- Ucho šálku -->
             <g id="cup-handle-layer">
               <path d="M 174 74 C 230 74, 224 140, 160 140" 
                     fill="none" 
@@ -179,27 +184,19 @@
                     stroke-linecap="round" />
             </g>
 
-            <!-- 3. TĚLO ŠÁLKU S DOKONALÝM USAZENÍM V PODŠÁLKU -->
+            <!-- Tělo šálku -->
             <g id="cup-body-layer">
-              <!-- Kontaktní stín pod patkou šálku (integruje ho do podšálku) -->
               <ellipse cx="130" cy="170" rx="46" ry="7" fill="url(#cup-crease-shadow)" />
-
-              <!-- Porcelánový plášť -->
               <path d="M 58 58 
                        C 62 116, 78 163, 100 170
                        L 160 170 
                        C 182 163, 198 116, 202 58 
                        Z" 
                     fill="url(#cup-body-grad)" />
-
-              <!-- Odlesk na plášti -->
               <path d="M 80 60 C 84 108, 94 152, 108 167 C 100 164, 91 122, 88 62 Z" 
                     fill="rgba(255,255,255,0.2)" />
-
-              <!-- Vrchní hrana a hladina kávy -->
               <ellipse cx="130" cy="58" rx="74" ry="18" fill="var(--porcelain-shadow)" />
               <ellipse cx="130" cy="58" rx="71.5" ry="16" fill="var(--porcelain-highlight)" />
-
               <ellipse id="liquid" cx="130" cy="60" rx="66" ry="14" fill="url(#coffee-crema)" />
               <ellipse cx="116" cy="58" rx="36" ry="5.5" fill="rgba(255, 230, 195, 0.22)" />
             </g>
@@ -230,7 +227,7 @@
 
     </section>
 
-    <!-- DOLNÍ LIŠTA PRO ADMIN A BUDOUCÍ FUNKCE -->
+    <!-- DOLNÍ LIŠTA PRO ADMIN -->
     <nav id="bottom-bar" class="bottom-bar hidden">
       <button id="admin-switch-btn" class="bottom-bar-btn hidden">
         <span class="icon">⚙️</span>
@@ -242,19 +239,15 @@
     <section id="admin-view" class="hidden content-with-bottom-bar">
       <h2>Administrace</h2>
 
-      <!-- PŘEHLED A KARTOTÉKA VŠECH KÁV -->
+      <!-- Kartotéka káv s permanentním hodnocením -->
       <div class="card">
         <div class="badge-tag">HISTORIE & HODNOCENÍ VŠECH KÁV</div>
-        <div id="coffee-history-list" class="coffee-history-container">
-          <!-- Zde se dynamicky vykreslí seznam všech káv s průměry a detaily -->
-        </div>
+        <div id="coffee-history-list" class="coffee-history-container"></div>
       </div>
 
-      <!-- FORMULÁŘ: NASADIT NOVOU / UPRAVIT KÁVU -->
+      <!-- Formulář pro nasazení nové kávy -->
       <div class="card">
-        <h3 id="coffee-form-title">Nasadit novou kávu do mlýnku</h3>
-        <input type="hidden" id="admin-coffee-id" value="new">
-        
+        <h3>Nasadit novou kávu do mlýnku</h3>
         <div class="input-group">
           <label for="admin-coffee-name">Název kávy & původ</label>
           <input type="text" id="admin-coffee-name" placeholder="např. Kolumbie Supremo">
@@ -271,7 +264,6 @@
           <label for="admin-prazeni">Stupeň pražení (1–5)</label>
           <input type="number" id="admin-prazeni" min="1" max="5" value="3">
         </div>
-        
         <button id="admin-save-coffee" class="btn btn-primary">Uložit a nasadit do kávovaru</button>
       </div>
 
@@ -297,6 +289,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=1.7"></script>
+  <script src="app.js?v=1.9"></script>
 </body>
 </html>

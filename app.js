@@ -10,15 +10,15 @@ const RATING_DESCRIPTIONS = {
   5: "5 – Skvělý kafe"
 };
 
-// SVG zrno s realistickou vlnitou esovitou rýhou pod úhlem -25°
+// Buclaté kávové zrno s decentní a zkrácenou esovitou rýhou
 function createBeanSVG(isActive) {
   return `
     <svg viewBox="0 0 30 30" class="bean-svg ${isActive ? 'active' : 'inactive'}">
-      <ellipse cx="15" cy="15" rx="9" ry="13.5" class="bean-body" transform="rotate(-25 15 15)" />
-      <path d="M 9.5 5 C 13.5 10, 11 14, 15 17.5 C 18 20.5, 17 24, 20.5 25" 
+      <ellipse cx="15" cy="15" rx="11.5" ry="13.5" class="bean-body" transform="rotate(-25 15 15)" />
+      <path d="M 10.5 8 C 13.5 11.5, 13 14.5, 15 17 C 16.8 19.2, 16.5 21, 19.5 22.5" 
             class="bean-crease" 
             fill="none" 
-            stroke-width="1.6" 
+            stroke-width="3.2" 
             stroke-linecap="round" />
     </svg>
   `;
@@ -34,7 +34,7 @@ let state = {
   clicksInSession: 0
 };
 
-// Registrace Service Workeru pro PWA
+// Registrace Service Workeru pro PWA instalaci
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW reg failed: ", err));
@@ -49,12 +49,22 @@ function initTheme() {
 }
 
 function applyTheme(theme) {
+  let effectiveTheme = theme;
   if (theme === "system") {
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
-  } else {
-    document.documentElement.setAttribute("data-theme", theme);
+    effectiveTheme = isDark ? "dark" : "light";
   }
+
+  document.documentElement.setAttribute("data-theme", effectiveTheme);
+
+  // Dynamická změna barvy stavové lišty a gesture baru v systému
+  const themeColor = effectiveTheme === "dark" ? "#1c1714" : "#f5eee6";
+  
+  // Aktualizuje všechny theme-color meta tagy
+  const metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
+  metaThemeColors.forEach(meta => {
+    meta.setAttribute("content", themeColor);
+  });
 }
 
 themeBtn.addEventListener("click", () => {
@@ -174,7 +184,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   document.getElementById("login-view").classList.remove("hidden");
 });
 
-// 4. KÁVOVÝ ŠTÍTEK (S pojistkou proti chybějícím datům)
+// 4. KÁVOVÝ ŠTÍTEK
 function renderBeansMeter(containerId, value) {
   const container = document.getElementById(containerId);
   container.innerHTML = "";
@@ -306,7 +316,7 @@ async function syncDrankToServer(userId, drank) {
   }
 }
 
-// 7. MŘÍŽKA ŠÁLKŮ
+// 7. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ
 function updateCupsView() {
   const u = state.currentUser;
   const totalCups = u.prepaid || 0;
@@ -539,7 +549,7 @@ window.adminSaveUser = async function(id) {
   alert(`Uloženo: ${u.name}`);
 };
 
-// Start
+// Inicializace
 initTheme();
 tryInstantAutoLogin();
 loadData();

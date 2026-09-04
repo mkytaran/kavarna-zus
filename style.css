@@ -15,9 +15,9 @@
   --porcelain-highlight: #6e4735;
   --porcelain-shadow: #1c0e08;
 
-  /* Kávová zrnka - světlý režim (tón v tónu s nízkým kontrastem) */
+  /* Kávová zrnka - světlý režim */
   --bean-active: #542d17;
-  --bean-line-active: #3b1e0d;
+  --bean-line-active: #ac8a77;
   --bean-inactive: #d9cbbe;
   --bean-line-inactive: #c5b5a6;
 
@@ -47,11 +47,11 @@
   --porcelain-highlight: #ffffff;
   --porcelain-shadow: #9e8d7c;
 
-  /* Kávová zrnka - tmavý režim (tón v tónu s nízkým kontrastem) */
+  /* Kávová zrnka - tmavý režim */
   --bean-active: #dca073;
-  --bean-line-active: #b87b4f;
+  --bean-line-active: #4a240c;
   --bean-inactive: #42362d;
-  --bean-line-inactive: #312720;
+  --bean-line-inactive: #201813;
 
   --heart-active: #ff5252;
   --heart-inactive: #4b3d34;
@@ -142,7 +142,7 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* Kávový štítek s tenkým pevným rámečkem */
+/* Kávový štítek */
 .coffee-badge {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -235,7 +235,7 @@ body {
   min-height: 1.3rem;
 }
 
-/* Velký šálek s párou */
+/* Velký šálek s podšálkem */
 .cup-center {
   display: flex;
   flex-direction: column;
@@ -267,32 +267,45 @@ body {
   margin-top: 10px;
 }
 
-/* Animovaná pára */
-.steam-line {
+/* Měkká animovaná pára */
+.steam-group {
+  pointer-events: none;
+}
+.steam-puff {
   fill: none;
   stroke: var(--text-muted);
-  stroke-width: 3.5;
   stroke-linecap: round;
   opacity: 0;
-  animation: steamRise 3.2s infinite linear;
+  transform-origin: center bottom;
+  animation: realisticSteam 4.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
-.steam-1 { animation-delay: 0s; }
-.steam-2 { animation-delay: 1.1s; }
-.steam-3 { animation-delay: 2.2s; }
+.steam-1 {
+  stroke-width: 9;
+  animation-delay: 0s;
+}
+.steam-2 {
+  stroke-width: 12;
+  animation-delay: 1.4s;
+}
+.steam-3 {
+  stroke-width: 8;
+  animation-delay: 2.8s;
+}
 
-@keyframes steamRise {
+@keyframes realisticSteam {
   0% {
-    transform: translateY(8px);
+    transform: translateY(6px) scaleX(0.7) scaleY(0.6);
     opacity: 0;
   }
-  35% {
-    opacity: 0.55;
+  20% {
+    opacity: 0.35;
   }
-  75% {
-    opacity: 0.25;
+  60% {
+    opacity: 0.2;
+    transform: translateY(-20px) scaleX(1.3) scaleY(1.2);
   }
   100% {
-    transform: translateY(-20px);
+    transform: translateY(-46px) scaleX(1.9) scaleY(1.5);
     opacity: 0;
   }
 }
