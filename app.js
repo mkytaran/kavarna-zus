@@ -1,7 +1,6 @@
 // URL vašeho Google Apps Script Web App
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
 
-// Popisky hodnocení kávy M
 const RATING_DESCRIPTIONS = {
   1: "1 – Nechutná mi",
   2: "2 – Nic moc",
@@ -9,6 +8,16 @@ const RATING_DESCRIPTIONS = {
   4: "4 – Fajn kafe",
   5: "5 – Skvělý kafe"
 };
+
+// SVG šablona jednoho kávového zrna se středovou linkou
+function createBeanSVG(isActive) {
+  return `
+    <svg viewBox="0 0 30 30" class="bean-svg ${isActive ? 'active' : 'inactive'}">
+      <ellipse cx="15" cy="15" rx="10" ry="13" class="bean-body" transform="rotate(-25 15 15)" />
+      <path d="M 12 4 Q 17 15 13 26" class="bean-crease" fill="none" stroke-width="2.2" stroke-linecap="round" />
+    </svg>
+  `;
+}
 
 let state = {
   users: [],
@@ -20,11 +29,10 @@ let state = {
     prazeni: 3
   },
   currentUser: null,
-  // Evidence kliknutí během jedné návštěvy pro pojistku proti překliknutí
-  clicksInSession: 0 
+  clicksInSession: 0
 };
 
-// 1. TÉMA (Light / Dark / Systém)
+// 1. TÉMA
 const themeBtn = document.getElementById("theme-btn");
 function initTheme() {
   const saved = localStorage.getItem("zus_theme") || "system";
@@ -47,14 +55,13 @@ themeBtn.addEventListener("click", () => {
   localStorage.setItem("zus_theme", next);
 });
 
-// Sledování systémové změny
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e => {
   if (localStorage.getItem("zus_theme") === "system") {
     document.documentElement.setAttribute("data-theme", e.matches ? "dark" : "light");
   }
 });
 
-// 2. NAČTENÍ DAT A PŘIHLÁŠENÍ S PAMĚTÍ
+// 2. NAČÍTÁNÍ DAT
 async function loadData() {
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getData`);
@@ -67,8 +74,7 @@ async function loadData() {
     renderFinance();
     checkAutoLogin();
   } catch (err) {
-    console.error("Chyba při stahování:", err);
-    // Offline fallback pro testování vzhledu
+    console.error("Chyba při stahování dat:", err);
     checkAutoLogin();
   }
 }
@@ -79,69 +85,92 @@ function checkAutoLogin() {
     const parsed = JSON.parse(savedUser);
     const user = state.users.find(u => u.name.toLowerCase() === parsed.name.toLowerCase() && String(u.pin) === String(parsed.pin));
     if (user) {
-      loginUser(user, true);
+      loginUser(user);
     }
   }
 }
 
+// 3. PŘIHLÁŠENÍ & ODHLÁŠENÍ
 document.getElementById("login-btn").addEventListener("click", () => {
   const name = document.getElementById("login-name").value.trim();
   const pin = document.getElementById("login-pin").value.trim();
   const remember = document.getElementById("remember-me").checked;
 
   const user = state.users.find(u => u.name.toLowerCase() === name.toLowerCase() && String(u.pin) === pin);
-  
   if (user) {
     if (remember) {
       localStorage.setItem("zus_saved_user", JSON.stringify({ name: user.name, pin: user.pin }));
     } else {
       localStorage.removeItem("zus_saved_user");
     }
-    loginUser(user, false);
+    loginUser(user);
   } else {
-    alert("Nesprávné jméno nebo PIN. Zkontroluj velké/malé písmena.");
+    alert("Nesprávné jméno nebo PIN.");
   }
 });
 
-function loginUser(user, isAuto) {
+function loginUser(user) {
   state.currentUser = user;
   state.clicksInSession = 0;
-  
+
   document.getElementById("login-view").classList.add("hidden");
   document.getElementById("main-view").classList.remove("hidden");
-  document.getElementById("user-greeting").textContent = `Ahoj, ${user.name}!`;
+  document.getElementById("logout-btn").classList.remove("hidden");
+
+  const bottomBar = document.getElementById("bottom-bar");
+  const adminBtn = document.getElementById("admin-switch-btn");
 
   if (user.role === "admin") {
-    document.getElementById("admin-switch-btn").classList.remove("hidden");
+    bottomBar.classList.remove("hidden");
+    adminBtn.classList.remove("hidden");
+  } else {
+    bottomBar.classList.add("hidden");
+    adminBtn.classList.add("hidden");
   }
 
   updateCupsView();
   initRating();
 }
 
-// 3. VYKRESLENÍ KÁVOVÉHO ŠTÍTKU (Zrna 1–5)
-function getBeansString(count) {
-  // Plná zrnka a prázdná
-  return "🫘".repeat(Math.min(count, 5)) + "◦".repeat(Math.max(0, 5 - count));
+document.getElementById("logout-btn").addEventListener("click", () => {
+  state.currentUser = null;
+  state.clicksInSession = 0;
+  localStorage.removeItem("zus_saved_user");
+  document.getElementById("login-pin").value = "";
+  document.getElementById("logout-btn").classList.add("hidden");
+  document.getElementById("bottom-bar").classList.add("hidden");
+  document.getElementById("admin-switch-btn").classList.add("hidden");
+  document.getElementById("undo-btn").classList.add("hidden");
+  document.getElementById("main-view").classList.add("hidden");
+  document.getElementById("admin-view").classList.add("hidden");
+  document.getElementById("login-view").classList.remove("hidden");
+});
+
+// 4. KÁVOVÝ ŠTÍTEK (5 zrnek na řádek)
+function renderBeansMeter(containerId, value) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  for (let i = 1; i <= 5; i++) {
+    container.innerHTML += createBeanSVG(i <= value);
+  }
 }
 
 function renderCoffeeBadge() {
   document.getElementById("coffee-name").textContent = state.kava.nazev;
-  document.getElementById("beans-acidita").textContent = getBeansString(state.kava.acidita);
-  document.getElementById("beans-intenzita").textContent = getBeansString(state.kava.intenzita);
-  document.getElementById("beans-prazeni").textContent = getBeansString(state.kava.prazeni);
+  renderBeansMeter("beans-acidita", state.kava.acidita);
+  renderBeansMeter("beans-intenzita", state.kava.intenzita);
+  renderBeansMeter("beans-prazeni", state.kava.prazeni);
 }
 
-// 4. HODNOCENÍ SRDÍČKY
+// 5. HODNOCENÍ SRDÍČKY
 function initRating() {
-  const hearts = document.querySelectorAll("#hearts-container .heart");
+  const hearts = document.querySelectorAll("#hearts-container .heart-btn");
   const savedRating = localStorage.getItem(`zus_rating_${state.kava.nazev}`) || 0;
-
   paintHearts(savedRating);
 
-  hearts.forEach(h => {
-    h.onclick = () => {
-      const val = Number(h.getAttribute("data-val"));
+  hearts.forEach(btn => {
+    btn.onclick = () => {
+      const val = Number(btn.getAttribute("data-val"));
       localStorage.setItem(`zus_rating_${state.kava.nazev}`, val);
       paintHearts(val);
     };
@@ -149,20 +178,19 @@ function initRating() {
 }
 
 function paintHearts(val) {
-  const hearts = document.querySelectorAll("#hearts-container .heart");
-  hearts.forEach(h => {
-    const hVal = Number(h.getAttribute("data-val"));
-    if (hVal <= val) {
-      h.classList.add("active");
+  const buttons = document.querySelectorAll("#hearts-container .heart-btn");
+  buttons.forEach(btn => {
+    const btnVal = Number(btn.getAttribute("data-val"));
+    if (btnVal <= val) {
+      btn.classList.add("active");
     } else {
-      h.classList.remove("active");
+      btn.classList.remove("active");
     }
   });
-  const textEl = document.getElementById("rating-text");
-  textEl.textContent = RATING_DESCRIPTIONS[val] || "Klepni na srdíčko";
+  document.getElementById("rating-text").textContent = RATING_DESCRIPTIONS[val] || "Klepni na srdíčko";
 }
 
-// 5. ODKLIKNUTÍ VYPITÉ KÁVY & POJISTKA PROTI OMYLU
+// 6. ODKLIKÁVÁNÍ KÁVY & POJISTKA
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
 
@@ -171,7 +199,7 @@ cupAction.addEventListener("click", () => {
   if (!u) return;
 
   if (u.drank >= u.prepaid) {
-    alert("Všech 20 káv vyčerpáno. Nahlaste adminovi nové předplatné.");
+    alert("Všechny předplacené kávy máš vyčerpané. Dej vědět správci kasy.");
     return;
   }
 
@@ -181,7 +209,6 @@ cupAction.addEventListener("click", () => {
   updateCupsView();
   syncDrankToServer(u.id, u.drank);
 
-  // Zobrazíme tlačítko vrátit, pouze pokud uživatel v této relaci kliknul 2× a více
   if (state.clicksInSession > 1) {
     undoBtn.classList.remove("hidden");
   }
@@ -189,7 +216,6 @@ cupAction.addEventListener("click", () => {
 
 undoBtn.addEventListener("click", () => {
   const u = state.currentUser;
-  // Povoleno vrátit pouze pokud klikl vícekrát v jedné relaci (minimálně 1 kávu musí nechat vypitou)
   if (state.clicksInSession > 1) {
     u.drank -= 1;
     state.clicksInSession -= 1;
@@ -209,14 +235,15 @@ async function syncDrankToServer(userId, drank) {
       body: JSON.stringify({ action: "drinkCoffee", id: userId, drank: drank })
     });
   } catch (e) {
-    console.error("Chyba při ukládání kávy:", e);
+    console.error("Chyba při ukládání:", e);
   }
 }
 
-// 6. VYKRESLENÍ 20 MALÝCH ŠÁLKŮ
+// 7. DYNAMICKÝ POČET ŠÁLKŮ PODLE PŘEDPLATNÉHO
 function updateCupsView() {
   const u = state.currentUser;
-  document.getElementById("cups-count-text").textContent = `${u.drank} / ${u.prepaid}`;
+  const totalCups = u.prepaid || 0;
+  document.getElementById("cups-count-text").textContent = `${u.drank} / ${totalCups}`;
 
   const grid = document.getElementById("cups-grid");
   grid.innerHTML = "";
@@ -227,13 +254,12 @@ function updateCupsView() {
     </svg>
   `;
 
-  // Vygenerujeme přesně 20 pozic
-  for (let i = 1; i <= 20; i++) {
+  // Vygeneruje tolik šálků, na kolik má dotyčný předplatné
+  for (let i = 1; i <= totalCups; i++) {
     const div = document.createElement("div");
     div.classList.add("mini-cup");
     div.innerHTML = miniCupSVG;
 
-    // Vypité šálky zešednou a zesvětlají
     if (i <= u.drank) {
       div.classList.add("empty");
     } else {
@@ -244,14 +270,14 @@ function updateCupsView() {
 
   // Velký šálek
   const liquid = document.getElementById("liquid");
-  if (u.drank >= u.prepaid) {
-    liquid.style.fill = "var(--cup-empty)";
+  if (u.drank >= totalCups) {
+    liquid.style.opacity = "0.2";
   } else {
-    liquid.style.fill = "var(--cup-full)";
+    liquid.style.opacity = "1";
   }
 }
 
-// 7. POKLADNA
+// 8. POKLADNA
 function renderFinance() {
   const vybrano = state.finance.vybrano || 0;
   const naklady = (state.finance.naklady || 0) + (state.finance.doprava || 0);
@@ -262,22 +288,10 @@ function renderFinance() {
   document.getElementById("fin-rozdil").textContent = `${rozdil} Kč`;
 }
 
-// 8. ODHLÁŠENÍ
-document.getElementById("logout-btn").addEventListener("click", () => {
-  state.currentUser = null;
-  state.clicksInSession = 0;
-  localStorage.removeItem("zus_saved_user");
-  document.getElementById("login-pin").value = "";
-  document.getElementById("admin-switch-btn").classList.add("hidden");
-  document.getElementById("undo-btn").classList.add("hidden");
-  document.getElementById("main-view").classList.add("hidden");
-  document.getElementById("admin-view").classList.add("hidden");
-  document.getElementById("login-view").classList.remove("hidden");
-});
-
 // 9. ADMIN PANEL
 document.getElementById("admin-switch-btn").addEventListener("click", () => {
   document.getElementById("main-view").classList.add("hidden");
+  document.getElementById("bottom-bar").classList.add("hidden");
   document.getElementById("admin-view").classList.remove("hidden");
 
   document.getElementById("admin-coffee-name").value = state.kava.nazev;
@@ -291,6 +305,7 @@ document.getElementById("admin-switch-btn").addEventListener("click", () => {
 document.getElementById("admin-back-btn").addEventListener("click", () => {
   document.getElementById("admin-view").classList.add("hidden");
   document.getElementById("main-view").classList.remove("hidden");
+  document.getElementById("bottom-bar").classList.remove("hidden");
 });
 
 function renderAdminUsers() {
@@ -302,7 +317,7 @@ function renderAdminUsers() {
       <td>${u.name}</td>
       <td><input type="number" id="p-${u.id}" value="${u.prepaid}"></td>
       <td><input type="number" id="d-${u.id}" value="${u.drank}"></td>
-      <td><button class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="adminSaveUser(${u.id})">Uložit</button></td>
+      <td><button class="btn btn-primary" style="padding: 6px 10px; font-size: 0.85rem;" onclick="adminSaveUser(${u.id})">Uložit</button></td>
     `;
     tbody.appendChild(tr);
   });
@@ -343,6 +358,5 @@ document.getElementById("admin-save-coffee").addEventListener("click", async () 
   alert("Kávový štítek aktualizován!");
 });
 
-// Start aplikace
 initTheme();
 loadData();

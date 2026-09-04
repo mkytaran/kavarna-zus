@@ -11,10 +11,11 @@
 <body>
   <div class="app-container">
     
-    <!-- Horní lišta s přepínačem režimu -->
+    <!-- Horní lišta -->
     <div class="top-bar">
-      <span class="app-title">☕ Kávovník ZUŠ</span>
-      <div class="theme-switch">
+      <span class="app-title">☕ ZUŠkafe</span>
+      <div class="top-bar-right">
+        <button id="logout-btn" class="link-btn hidden">Odhlásit</button>
         <button id="theme-btn" title="Přepnout režim" class="icon-btn">🌓</button>
       </div>
     </div>
@@ -38,78 +39,93 @@
           <label for="remember-me">Zapamatovat přihlášení</label>
         </div>
 
-        <button id="login-btn" class="btn btn-primary">Vstoupit</button>
+        <button id="login-btn" class="btn btn-primary">Vstoupit do kavárny</button>
       </div>
     </section>
 
     <!-- HLAVNÍ OBRAZOVKA -->
-    <section id="main-view" class="hidden">
+    <section id="main-view" class="hidden content-with-bottom-bar">
       
-      <!-- Uvítání a odhlášení -->
-      <div class="user-header">
-        <span id="user-greeting">Ahoj!</span>
-        <button id="logout-btn" class="link-btn">Odhlásit</button>
-      </div>
-
-      <!-- Kávový štítek zrnkové kávy -->
+      <!-- Kávový štítek -->
       <div class="coffee-badge">
         <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
-        <div class="badge-title" id="coffee-name">Brasil Pergamino</div>
+        <div class="badge-title" id="coffee-name">Brasil Pergamino Sul de Minas</div>
+        
         <div class="coffee-attributes">
           <div class="attr-row">
-            <span>Acidita:</span>
-            <span class="beans-meter" id="beans-acidita"></span>
+            <span class="attr-label">Acidita:</span>
+            <div class="beans-meter" id="beans-acidita"></div>
           </div>
           <div class="attr-row">
-            <span>Intenzita:</span>
-            <span class="beans-meter" id="beans-intenzita"></span>
+            <span class="attr-label">Intenzita:</span>
+            <div class="beans-meter" id="beans-intenzita"></div>
           </div>
           <div class="attr-row">
-            <span>Pražení:</span>
-            <span class="beans-meter" id="beans-prazeni"></span>
+            <span class="attr-label">Pražení:</span>
+            <div class="beans-meter" id="beans-prazeni"></div>
           </div>
         </div>
 
-        <!-- Hodnocení srdíčky -->
+        <!-- Hodnocení velkými srdíčky -->
         <div class="rating-box">
           <div class="rating-prompt">Jak ti chutná?</div>
           <div class="hearts-row" id="hearts-container">
-            <span class="heart" data-val="1">♥</span>
-            <span class="heart" data-val="2">♥</span>
-            <span class="heart" data-val="3">♥</span>
-            <span class="heart" data-val="4">♥</span>
-            <span class="heart" data-val="5">♥</span>
+            <button type="button" class="heart-btn" data-val="1" aria-label="1 srdíčko">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+            <button type="button" class="heart-btn" data-val="2" aria-label="2 srdíčka">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+            <button type="button" class="heart-btn" data-val="3" aria-label="3 srdíčka">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+            <button type="button" class="heart-btn" data-val="4" aria-label="4 srdíčka">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+            <button type="button" class="heart-btn" data-val="5" aria-label="5 srdíček">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
           </div>
           <div class="rating-label" id="rating-text">Klepni na srdíčko</div>
         </div>
       </div>
 
-      <!-- Interaktivní velký šálek -->
+      <!-- Interaktivní velký šálek s párou -->
       <div class="cup-center">
         <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu">
-          <svg viewBox="0 0 100 80" class="cup-svg">
-            <path d="M 15 15 L 22 65 C 23 72, 77 72, 78 65 L 85 15 Z" class="cup-body" />
-            <path d="M 75 22 C 92 22, 92 50, 72 50" class="cup-handle" />
-            <ellipse cx="50" cy="15" rx="35" ry="9" class="cup-rim" />
-            <ellipse id="liquid" cx="50" cy="17" rx="31" ry="7" class="cup-liquid" />
+          <svg viewBox="0 0 160 140" class="cup-svg">
+            <!-- Animovaná stoupající pára -->
+            <g class="steam-group">
+              <path class="steam-line steam-1" d="M60 42 Q 52 30 60 18 Q 68 8 60 0" />
+              <path class="steam-line steam-2" d="M80 40 Q 72 26 80 14 Q 88 4 80 -4" />
+              <path class="steam-line steam-3" d="M100 42 Q 92 30 100 18 Q 108 8 100 0" />
+            </g>
+            <!-- Podšálek -->
+            <ellipse cx="80" cy="126" rx="55" ry="10" class="cup-saucer" />
+            <!-- Ucho -->
+            <path d="M 115 56 C 146 56, 146 98, 112 98" class="cup-handle" />
+            <!-- Tělo hrnku -->
+            <path d="M 32 46 L 45 110 C 47 118, 113 118, 115 110 L 128 46 Z" class="cup-body" />
+            <!-- Vrchní lem hrnku -->
+            <ellipse cx="80" cy="46" rx="48" ry="13" class="cup-rim" />
+            <!-- Hladina kávy -->
+            <ellipse id="liquid" cx="80" cy="48" rx="43" ry="10" class="cup-liquid" />
           </svg>
           <div class="cup-click-label">Dnes piju kávu ☕</div>
         </div>
         <button id="undo-btn" class="btn-undo hidden">↩ Omyl? Vrátit 1 kávu</button>
       </div>
 
-      <!-- Přehled 20 malých šálků -->
+      <!-- Dynamická mřížka šálků předplatného -->
       <div class="cups-container">
         <div class="cups-title-row">
           <span>Stav předplatného</span>
-          <strong id="cups-count-text">0 / 20</strong>
+          <strong id="cups-count-text">0 / 0</strong>
         </div>
-        <div class="cups-grid" id="cups-grid">
-          <!-- 20 šálků se vygeneruje skriptem -->
-        </div>
+        <div class="cups-grid" id="cups-grid"></div>
       </div>
 
-      <!-- Diskrétní stav pokladny -->
+      <!-- Stav pokladny -->
       <div class="treasury-card">
         <div class="treasury-header">Stav pokladny</div>
         <div class="treasury-row">
@@ -119,15 +135,20 @@
         </div>
       </div>
 
-      <!-- Tlačítko pro Admin panel -->
-      <button id="admin-switch-btn" class="btn btn-secondary hidden">Správa kavárny (Admin)</button>
     </section>
 
+    <!-- DOLNÍ LIŠTA PRO ADMIN A BUDOUCÍ FUNKCE -->
+    <nav id="bottom-bar" class="bottom-bar hidden">
+      <button id="admin-switch-btn" class="bottom-bar-btn hidden">
+        <span class="icon">⚙️</span>
+        <span>Správa kavárny</span>
+      </button>
+    </nav>
+
     <!-- ADMIN PANEL -->
-    <section id="admin-view" class="hidden">
+    <section id="admin-view" class="hidden content-with-bottom-bar">
       <h2>Administrace</h2>
       
-      <!-- Editace aktuální kávy -->
       <div class="card">
         <h3>Nastavení kávového štítku</h3>
         <div class="input-group">
@@ -149,7 +170,6 @@
         <button id="admin-save-coffee" class="btn btn-primary">Uložit kávu</button>
       </div>
 
-      <!-- Tabulka uživatelů -->
       <div class="card">
         <h3>Kafaři a platby</h3>
         <div style="overflow-x: auto;">
@@ -171,6 +191,6 @@
     </section>
 
   </div>
-  <script src="app.js"></script> 
+  <script src="app.js"></script>
 </body>
 </html>
