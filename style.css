@@ -144,20 +144,13 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* Kompaktní kávový štítek */
+/* Kávový štítek */
 .coffee-badge {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   padding: 10px 14px;
   box-shadow: var(--shadow);
-}
-
-.badge-top-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2px;
 }
 
 .badge-tag {
@@ -206,34 +199,51 @@ body {
 .bean-svg.inactive .bean-body { fill: var(--bean-inactive); }
 .bean-svg.inactive .bean-crease { stroke: var(--bean-line-inactive); }
 
-/* Kompaktní srdíčka v záhlaví štítku */
-.hearts-row {
-  display: flex;
-  gap: 4px;
+/* Samostatná kartička pro hodnocení */
+.rating-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  box-shadow: var(--shadow);
 }
+
+.rating-box.is-syncing {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Roztažení tlačítek rovnoměrně po celé šířce karty */
+.hearts-row-full {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .heart-btn {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: 4px;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
+
 .heart-btn svg {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   fill: var(--heart-inactive);
   transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), fill 0.2s;
 }
+
 .heart-btn.active svg {
   fill: var(--heart-active);
 }
+
 .heart-btn:hover svg {
-  transform: scale(1.2);
-}
-.badge-top-row.is-syncing {
-  opacity: 0.6;
-  pointer-events: none;
+  transform: scale(1.18);
 }
 
 /* Velký šálek */
