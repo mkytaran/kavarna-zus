@@ -43,6 +43,7 @@ if ("serviceWorker" in navigator) {
 
 // 1. TÉMA A SYSTÉMOVÉ LIŠTY
 const themeBtn = document.getElementById("theme-btn");
+
 function initTheme() {
   const saved = localStorage.getItem("zus_theme") || "system";
   applyTheme(saved);
@@ -55,15 +56,43 @@ function applyTheme(theme) {
     effectiveTheme = isDark ? "dark" : "light";
   }
 
+  // Nastavíme atribut pro CSS proměnné a color-scheme
   document.documentElement.setAttribute("data-theme", effectiveTheme);
+  document.documentElement.style.colorScheme = effectiveTheme;
 
-  // Dynamická změna barvy stavové lišty a gesture baru v systému
-  const themeColor = effectiveTheme === "dark" ? "#1c1714" : "#f5eee6";
-  const metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
-  metaThemeColors.forEach(meta => {
-    meta.setAttribute("content", themeColor);
-  });
+  // Cílová barva lišty
+  const targetColor = effectiveTheme === "dark" ? "#1c1714" : "#f5eee6";
+
+  // Spolehlivá aktualizace meta tagu pro Android/Chrome
+  let meta = document.getElementById("theme-color-meta");
+  if (!meta) {
+    meta = document.querySelector('meta[name="theme-color"]');
+  }
+
+  if (meta) {
+    meta.removeAttribute("media"); // Odstraní podmínku, aby platil bez ohledu na režim OS
+    meta.setAttribute("content", targetColor);
+  } else {
+    meta = document.createElement("meta");
+    meta.id = "theme-color-meta";
+    meta.name = "theme-color";
+    meta.content = targetColor;
+    document.head.appendChild(meta);
+  }
 }
+
+themeBtn.addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme");
+  const next = current === "dark" ? "light" : "dark";
+  localStorage.setItem("zus_theme", next);
+  applyTheme(next);
+});
+
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e => {
+  if (localStorage.getItem("zus_theme") === "system") {
+    applyTheme("system");
+  }
+});
 
 themeBtn.addEventListener("click", () => {
   const current = document.documentElement.getAttribute("data-theme");

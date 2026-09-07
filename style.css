@@ -1,5 +1,6 @@
 /* Krémové světlé téma */
 :root {
+  color-scheme: light;
   --bg-app: #f5eee6;
   --card-bg: #fffbf7;
   --card-border: #e6dacd;
@@ -32,6 +33,7 @@
 
 /* Krémové tmavé téma */
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg-app: #1c1714;
   --card-bg: #27201b;
   --card-border: #3d332b;
