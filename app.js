@@ -46,25 +46,20 @@ function applyTheme(theme) {
     effectiveTheme = isDark ? "dark" : "light";
   }
 
+  // Nastavíme téma pro CSS
   document.documentElement.setAttribute("data-theme", effectiveTheme);
-  document.documentElement.style.colorScheme = effectiveTheme;
 
+  // Cílová barva lišty podle aktuálního režimu
   const targetColor = effectiveTheme === "dark" ? "#1c1714" : "#f5eee6";
-  let meta = document.getElementById("theme-color-meta");
-  if (!meta) {
-    meta = document.querySelector('meta[name="theme-color"]');
-  }
 
-  if (meta) {
-    meta.removeAttribute("media");
-    meta.setAttribute("content", targetColor);
-  } else {
-    meta = document.createElement("meta");
-    meta.id = "theme-color-meta";
-    meta.name = "theme-color";
-    meta.content = targetColor;
-    document.head.appendChild(meta);
-  }
+  // 100% spolehlivé přebarvení lišty pro Android i iOS:
+  // Existující tagy smažeme a vytvoříme zcela nový. Prohlížeč tak změnu zaručeně zaregistruje.
+  document.querySelectorAll('meta[name="theme-color"]').forEach(meta => meta.remove());
+  
+  const newMeta = document.createElement("meta");
+  newMeta.name = "theme-color";
+  newMeta.content = targetColor;
+  document.head.appendChild(newMeta);
 }
 
 themeBtn.addEventListener("click", () => {
