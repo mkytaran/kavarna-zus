@@ -1,17 +1,14 @@
 <!DOCTYPE html>
-<html lang="cs" data-theme="system">
+<html lang="cs">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- Dynamický tag (Javascript ho bude přepisovat) -->
   <meta name="theme-color" content="#f5eee6">
-  
-  <!-- Podpora stavové lišty pro Apple iOS (musí být 'default', aby fungoval theme-color) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>ZUŠkafe</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=1.1">
+  <link rel="stylesheet" href="style.css?v=1.2">
 </head>
 <body>
   <div class="app-container">
@@ -21,7 +18,6 @@
       <span class="app-title">☕ ZUŠkafe</span>
       <div class="top-bar-right">
         <button id="logout-btn" class="link-btn hidden">Odhlásit</button>
-        <button id="theme-btn" title="Přepnout režim" class="icon-btn">🌓</button>
       </div>
     </div>
 
@@ -51,7 +47,7 @@
     <!-- HLAVNÍ OBRAZOVKA -->
     <section id="main-view" class="hidden content-with-bottom-bar">
       
-     <!-- 1. Samostatný kávový štítek -->
+      <!-- Kávový štítek -->
       <div class="coffee-badge">
         <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
         <div class="badge-title" id="coffee-name">Brasil Pergamino Sul de Minas</div>
@@ -72,7 +68,7 @@
         </div>
       </div>
 
-      <!-- 2. Samostatná kartička se srdíčky přes celou šířku -->
+      <!-- Kartička se srdíčky přes celou šířku -->
       <div class="rating-card rating-box">
         <div class="hearts-row-full" id="hearts-container">
           <button type="button" class="heart-btn" data-val="1" aria-label="1 srdíčko">
@@ -274,6 +270,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=2.4"></script>
+  <script src="app.js?v=2.5"></script>
 </body>
 </html>

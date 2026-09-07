@@ -32,50 +32,7 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// 1. TÉMA A SYSTÉMOVÉ LIŠTY
-const themeBtn = document.getElementById("theme-btn");
-function initTheme() {
-  const saved = localStorage.getItem("zus_theme") || "system";
-  applyTheme(saved);
-}
-
-function applyTheme(theme) {
-  let effectiveTheme = theme;
-  if (theme === "system") {
-    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    effectiveTheme = isDark ? "dark" : "light";
-  }
-
-  // Nastavíme téma pro CSS
-  document.documentElement.setAttribute("data-theme", effectiveTheme);
-
-  // Cílová barva lišty podle aktuálního režimu
-  const targetColor = effectiveTheme === "dark" ? "#1c1714" : "#f5eee6";
-
-  // 100% spolehlivé přebarvení lišty pro Android i iOS:
-  // Existující tagy smažeme a vytvoříme zcela nový. Prohlížeč tak změnu zaručeně zaregistruje.
-  document.querySelectorAll('meta[name="theme-color"]').forEach(meta => meta.remove());
-  
-  const newMeta = document.createElement("meta");
-  newMeta.name = "theme-color";
-  newMeta.content = targetColor;
-  document.head.appendChild(newMeta);
-}
-
-themeBtn.addEventListener("click", () => {
-  const current = document.documentElement.getAttribute("data-theme");
-  const next = current === "dark" ? "light" : "dark";
-  localStorage.setItem("zus_theme", next);
-  applyTheme(next);
-});
-
-window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e => {
-  if (localStorage.getItem("zus_theme") === "system") {
-    applyTheme("system");
-  }
-});
-
-// 2. MEZIPAMĚŤ PRO OKAMŽITÉ ZOBRAZENÍ
+// 1. MEZIPAMĚŤ PRO OKAMŽITÉ ZOBRAZENÍ
 function restoreCachedCoffeeData() {
   try {
     const cachedKava = localStorage.getItem("zus_cached_kava");
@@ -94,7 +51,7 @@ function restoreCachedCoffeeData() {
   }
 }
 
-// 3. PŘIHLÁŠENÍ ZE ZÁLOHY
+// 2. PŘIHLÁŠENÍ ZE ZÁLOHY
 function tryInstantAutoLogin() {
   const savedUser = localStorage.getItem("zus_saved_user");
   if (!savedUser) return;
@@ -129,9 +86,9 @@ function showMainScreen(user) {
   initRating();
 }
 
-// 4. NAČTENÍ DAT ZE SERVERU
+// 3. NAČTENÍ DAT ZE SERVERU
 async function loadData() {
-  const syncRow = document.querySelector(".badge-top-row");
+  const syncRow = document.querySelector(".rating-box");
   if (syncRow) syncRow.classList.add("is-syncing");
 
   try {
@@ -208,7 +165,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   document.getElementById("login-view").classList.remove("hidden");
 });
 
-// 5. KÁVOVÝ ŠTÍTEK
+// 4. KÁVOVÝ ŠTÍTEK
 function renderBeansMeter(containerId, value) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -227,7 +184,7 @@ function renderCoffeeBadge() {
   renderBeansMeter("beans-prazeni", state.kava.prazeni || 3);
 }
 
-// 6. HODNOCENÍ POUZE SRDÍČKY (ČISTÉ BEZ TEXTŮ)
+// 5. HODNOCENÍ POUZE SRDÍČKY
 function initRating() {
   const hearts = document.querySelectorAll("#hearts-container .heart-btn");
   let myRating = 0;
@@ -294,7 +251,7 @@ function paintHearts(val) {
   });
 }
 
-// 7. ODKLIKÁVÁNÍ KÁVY
+// 6. ODKLIKÁVÁNÍ KÁVY
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
 
@@ -347,7 +304,7 @@ async function syncDrankToServer(userId, drank) {
   }
 }
 
-// 8. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ
+// 7. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ
 function updateCupsView() {
   const u = state.currentUser;
   if (!u) return;
@@ -385,7 +342,7 @@ function updateCupsView() {
   }
 }
 
-// 9. POKLADNA
+// 8. POKLADNA
 function renderFinance() {
   const vybrano = state.finance.vybrano || 0;
   const naklady = (state.finance.naklady || 0) + (state.finance.doprava || 0);
@@ -400,7 +357,7 @@ function renderFinance() {
   if (elRoz) elRoz.textContent = `${rozdil} Kč`;
 }
 
-// 10. ADMIN KARTOTÉKA KÁV
+// 9. ADMIN KARTOTÉKA KÁV
 const adminSwitchBtn = document.getElementById("admin-switch-btn");
 if (adminSwitchBtn) {
   adminSwitchBtn.addEventListener("click", () => {
@@ -603,7 +560,6 @@ window.adminSaveUser = async function(id) {
 };
 
 // Start aplikace
-initTheme();
 restoreCachedCoffeeData();
 tryInstantAutoLogin();
 loadData();

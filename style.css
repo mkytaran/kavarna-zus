@@ -1,6 +1,7 @@
-/* Krémové světlé téma */
 :root {
   color-scheme: light;
+  
+  /* Celkové světlé barvy aplikace */
   --bg-app: #f5eee6;
   --card-bg: #fffbf7;
   --card-border: #e6dacd;
@@ -10,18 +11,19 @@
   --primary-hover: #3b1e0f;
   --accent: #b86e3b;
 
-  /* Porcelánový šálek */
-  --porcelain-base: #331f16;
-  --porcelain-mid: #4a2f22;
-  --porcelain-highlight: #6e4735;
-  --porcelain-shadow: #1c0e08;
+  /* Světlý porcelánový šálek na světlém pozadí */
+  --porcelain-base: #dfd1bf;
+  --porcelain-mid: #eee2d3;
+  --porcelain-highlight: #ffffff;
+  --porcelain-shadow: #9e8d7c;
 
-  /* Kávová zrnka */
+  /* Kávová zrnka (kontrastní tmavá) */
   --bean-active: #542d17;
   --bean-line-active: #ac8a77;
   --bean-inactive: #d9cbbe;
   --bean-line-inactive: #c5b5a6;
 
+  /* Srdíčka */
   --heart-active: #e03838;
   --heart-inactive: #dac8b8;
 
@@ -29,38 +31,6 @@
   --bottom-bar-bg: rgba(255, 251, 247, 0.94);
   --radius: 16px;
   --shadow: 0 4px 14px rgba(51, 32, 23, 0.05);
-}
-
-/* Krémové tmavé téma */
-[data-theme="dark"] {
-  color-scheme: dark;
-  --bg-app: #1c1714;
-  --card-bg: #27201b;
-  --card-border: #3d332b;
-  --text-main: #f5ebe1;
-  --text-muted: #af9c8e;
-  --primary: #c98858;
-  --primary-hover: #dc9b6b;
-  --accent: #e59d67;
-
-  /* Porcelánový šálek */
-  --porcelain-base: #dfd1bf;
-  --porcelain-mid: #eee2d3;
-  --porcelain-highlight: #ffffff;
-  --porcelain-shadow: #9e8d7c;
-
-  /* Kávová zrnka */
-  --bean-active: #dca073;
-  --bean-line-active: #4a240c;
-  --bean-inactive: #42362d;
-  --bean-line-inactive: #201813;
-
-  --heart-active: #ff5252;
-  --heart-inactive: #4b3d34;
-
-  --treasury-bg: #241d18;
-  --bottom-bar-bg: rgba(39, 32, 27, 0.94);
-  --shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 * {
@@ -80,7 +50,6 @@ body {
   padding: 10px 12px;
   font-size: 1rem;
   line-height: 1.35;
-  transition: background-color 0.3s, color 0.3s;
 }
 
 .app-container {
@@ -108,22 +77,12 @@ body {
 .top-bar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
 }
 .app-title {
   font-weight: 800;
   font-size: 1.25rem;
   color: var(--primary);
   letter-spacing: -0.5px;
-}
-.icon-btn {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  font-size: 1.05rem;
 }
 .link-btn {
   background: none;
@@ -170,7 +129,6 @@ body {
   text-overflow: ellipsis;
 }
 
-/* Řady zrnek */
 .coffee-attributes {
   display: flex;
   flex-direction: column;
@@ -207,20 +165,16 @@ body {
   padding: 8px 16px;
   box-shadow: var(--shadow);
 }
-
 .rating-box.is-syncing {
   opacity: 0.6;
   pointer-events: none;
 }
-
-/* Roztažení tlačítek rovnoměrně po celé šířce karty */
 .hearts-row-full {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
 }
-
 .heart-btn {
   background: none;
   border: none;
@@ -230,21 +184,14 @@ body {
   align-items: center;
   justify-content: center;
 }
-
 .heart-btn svg {
   width: 28px;
   height: 28px;
   fill: var(--heart-inactive);
   transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), fill 0.2s;
 }
-
-.heart-btn.active svg {
-  fill: var(--heart-active);
-}
-
-.heart-btn:hover svg {
-  transform: scale(1.18);
-}
+.heart-btn.active svg { fill: var(--heart-active); }
+.heart-btn:hover svg { transform: scale(1.18); }
 
 /* Velký šálek */
 .cup-center {
@@ -258,12 +205,8 @@ body {
   text-align: center;
   transition: transform 0.15s ease;
 }
-.cup-big:hover .cup-svg {
-  transform: scale(1.02);
-}
-.cup-big:active .cup-svg {
-  transform: scale(0.97);
-}
+.cup-big:hover .cup-svg { transform: scale(1.02); }
+.cup-big:active .cup-svg { transform: scale(0.97); }
 .cup-svg {
   width: 230px;
   height: 165px;
@@ -278,10 +221,8 @@ body {
   margin-top: 4px;
 }
 
-/* Dokonale plynulá svislá pára */
-.steam-group {
-  pointer-events: none;
-}
+/* Pára */
+.steam-group { pointer-events: none; }
 .steam-puff {
   fill: none;
   stroke: var(--text-muted);
@@ -289,38 +230,16 @@ body {
   opacity: 0;
   animation: continuousLinearSteam 6.5s infinite linear;
 }
-.steam-1 {
-  stroke-width: 14;
-  animation-delay: 0s;
-}
-.steam-2 {
-  stroke-width: 18;
-  animation-delay: 2.15s;
-}
-.steam-3 {
-  stroke-width: 14;
-  animation-delay: 4.3s;
-}
+.steam-1 { stroke-width: 14; animation-delay: 0s; }
+.steam-2 { stroke-width: 18; animation-delay: 2.15s; }
+.steam-3 { stroke-width: 14; animation-delay: 4.3s; }
 
 @keyframes continuousLinearSteam {
-  0% {
-    transform: translateY(4px);
-    opacity: 0;
-  }
-  20% {
-    opacity: 0.12;
-  }
-  50% {
-    opacity: 0.08;
-    transform: translateY(-26px);
-  }
-  80% {
-    opacity: 0.03;
-  }
-  100% {
-    transform: translateY(-54px);
-    opacity: 0;
-  }
+  0% { transform: translateY(4px); opacity: 0; }
+  20% { opacity: 0.12; }
+  50% { opacity: 0.08; transform: translateY(-26px); }
+  80% { opacity: 0.03; }
+  100% { transform: translateY(-54px); opacity: 0; }
 }
 
 /* Vrácení omylu */
@@ -336,7 +255,7 @@ body {
   cursor: pointer;
 }
 
-/* Mřížka šálků předplatného */
+/* Mřížka šálků */
 .cups-container {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -357,15 +276,8 @@ body {
   gap: 6px;
   justify-items: center;
 }
-.mini-cup {
-  width: 26px;
-  height: 26px;
-}
-.mini-cup svg {
-  width: 100%;
-  height: 100%;
-  transition: opacity 0.3s, fill 0.3s;
-}
+.mini-cup { width: 26px; height: 26px; }
+.mini-cup svg { width: 100%; height: 100%; transition: opacity 0.3s, fill 0.3s; }
 .mini-cup.full svg { fill: var(--primary); opacity: 1; }
 .mini-cup.empty svg { fill: var(--card-border); opacity: 0.45; }
 
@@ -474,10 +386,7 @@ body {
   font-size: 1rem;
   color: var(--primary);
 }
-.coffee-card-stats .hearts {
-  color: var(--heart-active);
-  letter-spacing: 1px;
-}
+.coffee-card-stats .hearts { color: var(--heart-active); letter-spacing: 1px; }
 .coffee-card-details {
   margin-top: 8px;
   padding-top: 8px;
@@ -490,11 +399,7 @@ body {
   color: var(--text-muted);
   margin-bottom: 6px;
 }
-.card-actions {
-  margin-top: 8px;
-  display: flex;
-  gap: 8px;
-}
+.card-actions { margin-top: 8px; display: flex; gap: 8px; }
 .btn-small {
   padding: 5px 8px;
   font-size: 0.78rem;
@@ -507,9 +412,7 @@ body {
   color: var(--text-muted);
   transition: transform 0.2s;
 }
-.dropdown-arrow.rotated {
-  transform: rotate(180deg);
-}
+.dropdown-arrow.rotated { transform: rotate(180deg); }
 .rating-user-row {
   display: flex;
   justify-content: space-between;
@@ -518,14 +421,8 @@ body {
   font-size: 0.85rem;
   border-bottom: 1px dashed var(--card-border);
 }
-.rating-user-row:last-child {
-  border-bottom: none;
-}
-.rating-user-hearts {
-  color: var(--heart-active);
-  letter-spacing: 1.5px;
-  font-size: 0.95rem;
-}
+.rating-user-row:last-child { border-bottom: none; }
+.rating-user-hearts { color: var(--heart-active); letter-spacing: 1.5px; font-size: 0.95rem; }
 
 /* Formuláře */
 .input-group {
@@ -567,24 +464,7 @@ input[type="text"], input[type="password"], input[type="number"] {
 }
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover { background: var(--primary-hover); }
-.btn-secondary {
-  background: transparent;
-  border: 2px solid var(--primary);
-  color: var(--primary);
-  margin-top: 8px;
-}
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-.admin-table th, .admin-table td {
-  padding: 6px 4px;
-  text-align: left;
-  border-bottom: 1px solid var(--card-border);
-}
-.admin-table input {
-  width: 50px;
-  padding: 4px;
-  font-size: 0.85rem;
-}
+.btn-secondary { background: transparent; border: 2px solid var(--primary); color: var(--primary); margin-top: 8px; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.admin-table th, .admin-table td { padding: 6px 4px; text-align: left; border-bottom: 1px solid var(--card-border); }
+.admin-table input { width: 50px; padding: 4px; font-size: 0.85rem; }
