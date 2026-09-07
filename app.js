@@ -23,6 +23,7 @@ let state = {
   ratings: [],
   currentUser: null,
   clicksInSession: 0,
+  todayDrank: 0, // Sleduje dnešní počet káv pro odznáček na šálku
   logs: []
 };
 
@@ -85,6 +86,7 @@ function showMainScreen(user) {
 
   updateCupsView();
   initRating();
+  syncDailyBadge(); // Načtení odznáčku pro aktuální den po přihlášení
 }
 
 // 3. NAČTENÍ DAT ZE SERVERU
@@ -156,6 +158,8 @@ document.getElementById("login-btn").addEventListener("click", () => {
 document.getElementById("logout-btn").addEventListener("click", () => {
   state.currentUser = null;
   state.clicksInSession = 0;
+  state.todayDrank = 0; // Vyčištění stavu odznáčku po odhlášení
+  
   localStorage.removeItem("zus_saved_user");
   document.getElementById("login-name").value = "";
   document.getElementById("login-pin").value = "";
@@ -166,9 +170,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   document.getElementById("admin-view").classList.add("hidden");
   document.getElementById("login-view").classList.remove("hidden");
   
-  // Skrýt červený odznáček při odhlášení
-  const badge = document.getElementById("main-cup-badge");
-  if (badge) badge.classList.add("hidden");
+  renderDailyBadge(); // Aktualizace UI (skrytí)
 });
 
 // 4. KÁVOVÝ ŠTÍTEK
@@ -257,7 +259,51 @@ function paintHearts(val) {
   });
 }
 
-// 6. ODKLIKÁVÁNÍ KÁVY (s červeným odznáčkem)
+// --- LOGIKA DENNÍHO ODZNÁČKU ---
+function syncDailyBadge() {
+  if (!state.currentUser) return;
+  const uId = state.currentUser.id;
+  const key = `zus_daily_badge_${uId}`;
+  const todayStr = new Date().toDateString(); // např. "Mon Sep 07 2026"
+  const saved = localStorage.getItem(key);
+
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (parsed.date === todayStr) {
+      state.todayDrank = parsed.count; // Jsme ve stejném dni, obnovíme číslo
+    } else {
+      state.todayDrank = 0; // Nový den! Vynulujeme.
+      localStorage.removeItem(key);
+    }
+  } else {
+    state.todayDrank = 0;
+  }
+  renderDailyBadge();
+}
+
+function saveDailyBadge() {
+  if (!state.currentUser) return;
+  const uId = state.currentUser.id;
+  const key = `zus_daily_badge_${uId}`;
+  const todayStr = new Date().toDateString();
+  
+  // Uložíme do paměti s dnešním datem
+  localStorage.setItem(key, JSON.stringify({ date: todayStr, count: state.todayDrank }));
+  renderDailyBadge();
+}
+
+function renderDailyBadge() {
+  const badge = document.getElementById("main-cup-badge");
+  if (!badge) return;
+  if (state.todayDrank > 0) {
+    badge.textContent = state.todayDrank;
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
+// 6. ODKLIKÁVÁNÍ KÁVY A OMYLŮ
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
 
@@ -273,18 +319,14 @@ if (cupAction) {
 
     u.drank += 1;
     state.clicksInSession += 1;
-
-    // Okamžité zobrazení červeného odznáčku na šálku
-    const badge = document.getElementById("main-cup-badge");
-    if (badge) {
-      badge.textContent = state.clicksInSession;
-      badge.classList.remove("hidden");
-    }
-
+    state.todayDrank += 1;
+    
+    saveDailyBadge(); // Uloží a vykreslí odznáček
     updateCupsView();
     syncDrankToServer(u.id, u.drank);
 
-    if (state.clicksInSession > 1 && undoBtn) {
+    // Tlačítko Omyl se ukáže ihned po prvním kliknutí v rámci relace
+    if (state.clicksInSession > 0 && undoBtn) {
       undoBtn.classList.remove("hidden");
     }
   });
@@ -293,24 +335,20 @@ if (cupAction) {
 if (undoBtn) {
   undoBtn.addEventListener("click", () => {
     const u = state.currentUser;
-    if (state.clicksInSession > 1) {
+    if (state.clicksInSession > 0) {
       u.drank -= 1;
       state.clicksInSession -= 1;
       
-      // Snížení čísla v odznáčku nebo jeho skrytí
-      const badge = document.getElementById("main-cup-badge");
-      if (badge) {
-        if (state.clicksInSession > 0) {
-          badge.textContent = state.clicksInSession;
-        } else {
-          badge.classList.add("hidden");
-        }
+      // Snížení denního odznáčku
+      if (state.todayDrank > 0) {
+        state.todayDrank -= 1;
+        saveDailyBadge();
       }
 
       updateCupsView();
       syncDrankToServer(u.id, u.drank);
 
-      if (state.clicksInSession <= 1) {
+      if (state.clicksInSession === 0) {
         undoBtn.classList.add("hidden");
       }
     }
@@ -591,7 +629,7 @@ if (adminSavePaymentBtn) {
       body: JSON.stringify({ action: "addPayment", userId: userId, amount: amount })
     });
 
-    await loadData(); // Dotáhne nová data ze serveru (aktualizuje finance i stav uživatele)
+    await loadData(); 
     renderUsageStats(); 
     alert(`Připsáno ${amount} Kč uživateli ${u.name}.`);
   });
@@ -610,8 +648,8 @@ window.adminSaveUser = async function(id) {
     body: JSON.stringify({ action: "adminUpdate", id: id, prepaid: prep, drank: drk, totalPaid: tPaid })
   });
   
-  await loadData(); // Stáhne čerstvá data ze serveru (včetně nových logů z rozdílu drank)
-  renderUsageStats(); // Okamžitě přepočítá týdenní a měsíční grafy
+  await loadData(); 
+  renderUsageStats(); 
   alert(`Uloženo: ${u.name}`);
 };
 
@@ -657,15 +695,13 @@ function renderUsageStats() {
   state.logs.forEach(log => {
     const d = new Date(log.date);
     
-    // Týdenní výpočet
     if (d >= mondayThisWeek) {
-      let dIndex = d.getDay() === 0 ? 6 : d.getDay() - 1; // 0=Po, 4=Pá
+      let dIndex = d.getDay() === 0 ? 6 : d.getDay() - 1; 
       if (dIndex <= 4 && weeklyStats[log.userId]) {
         weeklyStats[log.userId][dIndex] += log.diff;
       }
     }
     
-    // Měsíční výpočet
     if (d.getFullYear() + "-" + d.getMonth() === currentMonthStr && monthlyStats[log.userId] !== undefined) {
       monthlyStats[log.userId] += log.diff;
     }
