@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>ZUŠkafe</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=1.7">
+  <link rel="stylesheet" href="style.css?v=2.0">
 </head>
 <body>
   <div class="app-container">
@@ -29,17 +29,14 @@
           <label for="login-name">Jméno</label>
           <input type="text" id="login-name" placeholder="Zadej jméno" autocomplete="username">
         </div>
-
         <div class="input-group">
           <label for="login-pin">Čtyřmístný PIN</label>
           <input type="password" id="login-pin" inputmode="numeric" maxlength="4" placeholder="****">
         </div>
-
         <div class="checkbox-group">
           <input type="checkbox" id="remember-me" checked>
           <label for="remember-me">Zapamatovat přihlášení</label>
         </div>
-
         <button id="login-btn" class="btn btn-primary">Vstoupit do kavárny</button>
       </div>
     </section>
@@ -47,7 +44,7 @@
     <!-- HLAVNÍ OBRAZOVKA -->
     <section id="main-view" class="hidden content-with-bottom-bar flex-main-layout">
       
-      <!-- HORNÍ PRUŽNÁ ČÁST (Karty a šálek se rovnoměrně rozprostřou) -->
+      <!-- HORNÍ PRUŽNÁ ČÁST -->
       <div class="main-upper-space">
         <!-- 1. Kávový štítek -->
         <div class="coffee-badge">
@@ -70,32 +67,21 @@
           </div>
         </div>
 
-        <!-- 2. Kartička se srdíčky (vycentrovaná, pevné mezery) -->
+        <!-- 2. Kartička se srdíčky -->
         <div class="rating-card rating-box">
           <div class="hearts-row-full" id="hearts-container">
-            <button type="button" class="heart-btn" data-val="1" aria-label="1 srdíčko">
-              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            </button>
-            <button type="button" class="heart-btn" data-val="2" aria-label="2 srdíčka">
-              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            </button>
-            <button type="button" class="heart-btn" data-val="3" aria-label="3 srdíčka">
-              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            </button>
-            <button type="button" class="heart-btn" data-val="4" aria-label="4 srdíčka">
-              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            </button>
-            <button type="button" class="heart-btn" data-val="5" aria-label="5 srdíček">
-              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            </button>
+            <button type="button" class="heart-btn" data-val="1"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            <button type="button" class="heart-btn" data-val="2"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            <button type="button" class="heart-btn" data-val="3"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            <button type="button" class="heart-btn" data-val="4"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            <button type="button" class="heart-btn" data-val="5"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
           </div>
         </div>
 
-        <!-- 3. Realistický šálek s podšálkem a párou -->
+        <!-- 3. Realistický šálek -->
         <div class="cup-center">
           <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu" style="position: relative;">
             
-            <!-- NOVÉ: Červený odznáček zobrazený po kliknutí -->
             <div id="main-cup-badge" class="multi-cup-badge hidden" style="top: 25px; right: 40px; width: 32px; height: 32px; font-size: 1.1rem; border: 2px solid var(--bg-app); z-index: 10;">1</div>
             
             <svg viewBox="0 0 270 195" class="cup-svg">
@@ -105,60 +91,49 @@
                   <stop offset="65%" stop-color="rgba(0,0,0,0.16)" />
                   <stop offset="100%" stop-color="rgba(0,0,0,0)" />
                 </radialGradient>
-
                 <linearGradient id="saucer-body-grad" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stop-color="var(--porcelain-highlight)" />
                   <stop offset="28%" stop-color="var(--porcelain-mid)" />
                   <stop offset="70%" stop-color="var(--porcelain-base)" />
                   <stop offset="100%" stop-color="var(--porcelain-shadow)" />
                 </linearGradient>
-
                 <linearGradient id="cup-body-grad" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stop-color="var(--porcelain-mid)" />
                   <stop offset="18%" stop-color="var(--porcelain-highlight)" />
                   <stop offset="65%" stop-color="var(--porcelain-base)" />
                   <stop offset="100%" stop-color="var(--porcelain-shadow)" />
                 </linearGradient>
-
                 <linearGradient id="handle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stop-color="var(--porcelain-highlight)" />
                   <stop offset="40%" stop-color="var(--porcelain-mid)" />
                   <stop offset="80%" stop-color="var(--porcelain-base)" />
                   <stop offset="100%" stop-color="var(--porcelain-shadow)" />
                 </linearGradient>
-
                 <linearGradient id="rim-bevel" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stop-color="var(--porcelain-highlight)" />
                   <stop offset="35%" stop-color="var(--porcelain-mid)" />
                   <stop offset="75%" stop-color="var(--porcelain-base)" />
                   <stop offset="100%" stop-color="var(--porcelain-shadow)" />
                 </linearGradient>
-
                 <linearGradient id="inner-wall-shadow" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stop-color="var(--porcelain-shadow)" stop-opacity="0.85" />
                   <stop offset="100%" stop-color="var(--porcelain-mid)" stop-opacity="0.15" />
                 </linearGradient>
-
                 <radialGradient id="coffee-crema" cx="42%" cy="42%" r="60%">
                   <stop offset="0%" stop-color="#ba6b2c" />
                   <stop offset="35%" stop-color="#753713" />
                   <stop offset="75%" stop-color="#321406" />
                   <stop offset="100%" stop-color="#180702" />
                 </radialGradient>
-
                 <filter id="steam-blur" x="-50%" y="-50%" width="200%" height="200%">
                   <feGaussianBlur stdDeviation="5.5" />
                 </filter>
               </defs>
-
-              <!-- Pára -->
               <g class="steam-group" filter="url(#steam-blur)">
                 <path class="steam-puff steam-1" d="M 108 50 Q 102 34 108 18" />
                 <path class="steam-puff steam-2" d="M 130 48 Q 136 32 130 14" />
                 <path class="steam-puff steam-3" d="M 152 50 Q 146 34 152 18" />
               </g>
-
-              <!-- Podšálek -->
               <g id="saucer-complete">
                 <ellipse cx="130" cy="178" rx="108" ry="15" fill="url(#table-ambient)" />
                 <ellipse cx="130" cy="162" rx="112" ry="22" fill="url(#saucer-body-grad)" />
@@ -168,16 +143,12 @@
                 <ellipse cx="130" cy="157.5" rx="62" ry="12.5" fill="var(--porcelain-mid)" />
                 <path d="M 76 156 C 90 168, 170 168, 184 156 C 170 172, 90 172, 76 156 Z" fill="rgba(0,0,0,0.6)" />
               </g>
-
-              <!-- Ouško -->
               <g id="cup-handle-complete">
                 <ellipse cx="178" cy="124" rx="12" ry="8" fill="rgba(0,0,0,0.4)" />
                 <path d="M 194 56 C 246 58, 252 132, 182 132 C 172 132, 172 118, 184 117 C 228 114, 226 73, 186 70 Z" fill="url(#handle-grad)" />
                 <path d="M 194 57 C 244 59, 248 130, 182 131" fill="none" stroke="var(--porcelain-highlight)" stroke-width="2.6" stroke-linecap="round" opacity="0.8" />
                 <path d="M 186 70 C 193 70, 195 63, 194 56 Z" fill="var(--porcelain-shadow)" opacity="0.55" />
               </g>
-
-              <!-- Tělo šálku -->
               <g id="cup-body-layer">
                 <path d="M 80 155 C 92 168, 168 168, 180 155 C 168 165, 92 165, 80 155 Z" fill="rgba(0,0,0,0.85)" />
                 <path d="M 48.5 52 C 48 92, 64 140, 80 155 C 94 167.5, 166 167.5, 180 155 C 196 140, 212 92, 211.5 52 Z" fill="url(#cup-body-grad)" />
@@ -195,15 +166,19 @@
           </div>
           <button id="undo-btn" class="btn-undo hidden">↩ Omyl? Vrátit 1 kávu</button>
         </div>
-      </div> <!-- /Konec horní pružné části -->
+      </div>
 
-      <!-- SPODNÍ PŘILEPENÁ ČÁST (Vždy u spodního okraje) -->
+      <!-- SPODNÍ PŘILEPENÁ ČÁST -->
       <div class="main-lower-sticky">
-        <!-- Dynamická mřížka šálků předplatného -->
+        
+        <!-- Mřížka šálků předplatného vč. zobrazení dluhu -->
         <div class="cups-container">
           <div class="cups-title-row">
             <span>Stav předplatného</span>
-            <strong id="cups-count-text">0 / 0</strong>
+            <div style="text-align: right;">
+              <strong id="cups-count-text">0 / 0</strong><br>
+              <span id="cups-balance-text" style="font-size: 0.8rem;">Zbývá: 0 Kč</span>
+            </div>
           </div>
           <div class="cups-grid" id="cups-grid"></div>
         </div>
@@ -217,7 +192,7 @@
             <span>Zůstatek: <b id="fin-rozdil">0 Kč</b></span>
           </div>
         </div>
-      </div> <!-- /Konec spodní přilepené části -->
+      </div>
 
     </section>
 
@@ -230,84 +205,84 @@
     </nav>
 
     <!-- ADMIN PANEL -->
-      <section id="admin-view" class="hidden content-with-bottom-bar">
-        <h2>Administrace</h2>
+    <section id="admin-view" class="hidden content-with-bottom-bar">
+      <h2>Administrace</h2>
 
-        <div class="card">
-          <div class="badge-tag">HISTORIE & HODNOCENÍ VŠECH KÁV</div>
-          <div id="coffee-history-list" class="coffee-history-container"></div>
+      <div class="card">
+        <div class="badge-tag">HISTORIE & HODNOCENÍ VŠECH KÁV</div>
+        <div id="coffee-history-list" class="coffee-history-container"></div>
+      </div>
+
+      <div class="card">
+        <h3>Nasadit novou kávu do mlýnku</h3>
+        <div class="input-group">
+          <label for="admin-coffee-name">Název kávy & původ</label>
+          <input type="text" id="admin-coffee-name" placeholder="např. Kolumbie Supremo">
         </div>
-
-        <div class="card">
-          <h3>Nasadit novou kávu do mlýnku</h3>
-          <div class="input-group">
-            <label for="admin-coffee-name">Název kávy & původ</label>
-            <input type="text" id="admin-coffee-name" placeholder="např. Kolumbie Supremo">
-          </div>
-          <div class="input-group">
-            <label for="admin-acidita">Acidita (1–5)</label>
-            <input type="number" id="admin-acidita" min="1" max="5" value="3">
-          </div>
-          <div class="input-group">
-            <label for="admin-intenzita">Intenzita (1–5)</label>
-            <input type="number" id="admin-intenzita" min="1" max="5" value="3">
-          </div>
-          <div class="input-group">
-            <label for="admin-prazeni">Stupeň pražení (1–5)</label>
-            <input type="number" id="admin-prazeni" min="1" max="5" value="3">
-          </div>
-          <button id="admin-save-coffee" class="btn btn-primary">Uložit a nasadit do kávovaru</button>
+        <div class="input-group">
+          <label for="admin-acidita">Acidita (1–5)</label>
+          <input type="number" id="admin-acidita" min="1" max="5" value="3">
         </div>
-
-        <!-- PŘIPSAT PLATBU -->
-        <div class="card">
-          <h3>Připsat novou platbu</h3>
-          <div class="input-group">
-            <label for="payment-user">Kafař</label>
-            <select id="payment-user" class="input-select"></select>
-          </div>
-          <div class="input-group">
-            <label for="payment-amount">Zaplacená částka (Kč)</label>
-            <input type="number" id="payment-amount" placeholder="Např. 500">
-          </div>
-          <button id="admin-save-payment" class="btn btn-primary">Připsat částku k účtu</button>
+        <div class="input-group">
+          <label for="admin-intenzita">Intenzita (1–5)</label>
+          <input type="number" id="admin-intenzita" min="1" max="5" value="3">
         </div>
+        <div class="input-group">
+          <label for="admin-prazeni">Stupeň pražení (1–5)</label>
+          <input type="number" id="admin-prazeni" min="1" max="5" value="3">
+        </div>
+        <button id="admin-save-coffee" class="btn btn-primary">Uložit a nasadit do kávovaru</button>
+      </div>
 
-        <!-- 1. TENTO TÝDEN -->
-        <details class="card admin-details">
-          <summary>Tento týden (Po-Pá) <span class="dropdown-arrow">▼</span></summary>
-          <div id="admin-weekly-list" class="stats-list"></div>
-        </details>
+      <!-- PŘIPSAT PLATBU -->
+      <div class="card">
+        <h3>Připsat novou platbu</h3>
+        <div class="input-group">
+          <label for="payment-user">Kafař</label>
+          <select id="payment-user" class="input-select"></select>
+        </div>
+        <div class="input-group">
+          <label for="payment-amount">Zaplacená částka (Kč)</label>
+          <input type="number" id="payment-amount" placeholder="Např. 500">
+        </div>
+        <button id="admin-save-payment" class="btn btn-primary">Připsat částku k účtu</button>
+      </div>
 
-        <!-- 2. TENTO MĚSÍC -->
-        <details class="card admin-details">
-          <summary>Tento měsíc <span class="dropdown-arrow">▼</span></summary>
-          <div id="admin-monthly-list" class="stats-list"></div>
-        </details>
+      <!-- TENTO TÝDEN -->
+      <details class="card admin-details">
+        <summary>Tento týden (Po-Pá) <span class="dropdown-arrow">▼</span></summary>
+        <div id="admin-weekly-list" class="stats-list"></div>
+      </details>
 
-        <!-- 3. CELKOVÁ SPRÁVA A PLATBY -->
-        <details class="card admin-details">
-          <summary>Celková správa uživatelů <span class="dropdown-arrow">▼</span></summary>
-          <div style="overflow-x: auto; padding-top: 10px;">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Jméno</th>
-                  <th title="Stav aktuálního předplatného">Stav</th>
-                  <th title="Celkem zaplaceno (Kč)">Kč zapl.</th>
-                  <th title="Celkem vypito za celou dobu">Celk.☕</th>
-                  <th>Uložit</th>
-                </tr>
-              </thead>
-              <tbody id="admin-user-list"></tbody>
-            </table>
-          </div>
-        </details>
+      <!-- TENTO MĚSÍC -->
+      <details class="card admin-details">
+        <summary>Tento měsíc <span class="dropdown-arrow">▼</span></summary>
+        <div id="admin-monthly-list" class="stats-list"></div>
+      </details>
 
-        <button id="admin-back-btn" class="btn btn-secondary">Zpět na přehled</button>
-      </section>
+      <!-- CELKOVÁ SPRÁVA A PLATBY -->
+      <details class="card admin-details">
+        <summary>Celková správa uživatelů <span class="dropdown-arrow">▼</span></summary>
+        <div style="overflow-x: auto; padding-top: 10px;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Jméno</th>
+                <th title="Vypito / Předplaceno">Stav</th>
+                <th title="Celkem zaplaceno (Kč)">Kč zapl.</th>
+                <th title="Celkem vypito za celou dobu">Celk.☕</th>
+                <th>Uložit</th>
+              </tr>
+            </thead>
+            <tbody id="admin-user-list"></tbody>
+          </table>
+        </div>
+      </details>
+
+      <button id="admin-back-btn" class="btn btn-secondary">Zpět na přehled</button>
+    </section>
 
   </div>
-  <script src="app.js?v=2.8"></script>
+  <script src="app.js?v=2.9"></script>
 </body>
 </html>

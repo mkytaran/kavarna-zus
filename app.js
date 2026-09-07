@@ -1,7 +1,9 @@
 // URL vašeho Google Apps Script Web App
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
 
-// Buclaté kávové zrno s decentní zkrácenou esovitou rýhou
+// --- NASTAVENÍ CENY KÁVY PRO VÝPOČET DLUHU ---
+const CENA_KAVY = 10; // Změňte podle reálné ceny v kavárně v Kč
+
 function createBeanSVG(isActive) {
   return `
     <svg viewBox="0 0 30 30" class="bean-svg ${isActive ? 'active' : 'inactive'}">
@@ -23,11 +25,10 @@ let state = {
   ratings: [],
   currentUser: null,
   clicksInSession: 0,
-  todayDrank: 0, // Sleduje dnešní počet káv pro odznáček na šálku
+  todayDrank: 0,
   logs: []
 };
 
-// Registrace Service Workeru pro PWA instalaci
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW reg failed: ", err));
@@ -86,7 +87,7 @@ function showMainScreen(user) {
 
   updateCupsView();
   initRating();
-  syncDailyBadge(); // Načtení odznáčku pro aktuální den po přihlášení
+  syncDailyBadge();
 }
 
 // 3. NAČTENÍ DAT ZE SERVERU
@@ -158,7 +159,7 @@ document.getElementById("login-btn").addEventListener("click", () => {
 document.getElementById("logout-btn").addEventListener("click", () => {
   state.currentUser = null;
   state.clicksInSession = 0;
-  state.todayDrank = 0; // Vyčištění stavu odznáčku po odhlášení
+  state.todayDrank = 0;
   
   localStorage.removeItem("zus_saved_user");
   document.getElementById("login-name").value = "";
@@ -170,7 +171,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   document.getElementById("admin-view").classList.add("hidden");
   document.getElementById("login-view").classList.remove("hidden");
   
-  renderDailyBadge(); // Aktualizace UI (skrytí)
+  renderDailyBadge(); 
 });
 
 // 4. KÁVOVÝ ŠTÍTEK
@@ -264,15 +265,15 @@ function syncDailyBadge() {
   if (!state.currentUser) return;
   const uId = state.currentUser.id;
   const key = `zus_daily_badge_${uId}`;
-  const todayStr = new Date().toDateString(); // např. "Mon Sep 07 2026"
-  const saved = localStorage.getItem(key);
+  const todayStr = new Date().toDateString();
 
+  const saved = localStorage.getItem(key);
   if (saved) {
     const parsed = JSON.parse(saved);
     if (parsed.date === todayStr) {
-      state.todayDrank = parsed.count; // Jsme ve stejném dni, obnovíme číslo
+      state.todayDrank = parsed.count;
     } else {
-      state.todayDrank = 0; // Nový den! Vynulujeme.
+      state.todayDrank = 0;
       localStorage.removeItem(key);
     }
   } else {
@@ -286,8 +287,6 @@ function saveDailyBadge() {
   const uId = state.currentUser.id;
   const key = `zus_daily_badge_${uId}`;
   const todayStr = new Date().toDateString();
-  
-  // Uložíme do paměti s dnešním datem
   localStorage.setItem(key, JSON.stringify({ date: todayStr, count: state.todayDrank }));
   renderDailyBadge();
 }
@@ -303,7 +302,7 @@ function renderDailyBadge() {
   }
 }
 
-// 6. ODKLIKÁVÁNÍ KÁVY A OMYLŮ
+// 6. ODKLIKÁVÁNÍ KÁVY (s povolením na dluh)
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
 
@@ -312,20 +311,14 @@ if (cupAction) {
     const u = state.currentUser;
     if (!u) return;
 
-    if (u.drank >= u.prepaid) {
-      alert("Všechny předplacené kávy máš vyčerpané. Nahlaste správci nové předplatné.");
-      return;
-    }
-
     u.drank += 1;
     state.clicksInSession += 1;
     state.todayDrank += 1;
     
-    saveDailyBadge(); // Uloží a vykreslí odznáček
+    saveDailyBadge(); 
     updateCupsView();
     syncDrankToServer(u.id, u.drank);
 
-    // Tlačítko Omyl se ukáže ihned po prvním kliknutí v rámci relace
     if (state.clicksInSession > 0 && undoBtn) {
       undoBtn.classList.remove("hidden");
     }
@@ -339,7 +332,6 @@ if (undoBtn) {
       u.drank -= 1;
       state.clicksInSession -= 1;
       
-      // Snížení denního odznáčku
       if (state.todayDrank > 0) {
         state.todayDrank -= 1;
         saveDailyBadge();
@@ -366,14 +358,31 @@ async function syncDrankToServer(userId, drank) {
   }
 }
 
-// 7. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ PŘEDPLATNÉHO
+// 7. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ PŘEDPLATNÉHO (s dluhem)
 function updateCupsView() {
   const u = state.currentUser;
   if (!u) return;
 
-  const totalCups = u.prepaid || 0;
+  const totalCups = Number(u.prepaid) || 0;
+  const drankCups = Number(u.drank) || 0;
+  
+  const balance = totalCups - drankCups;
+  const balanceMoney = balance * CENA_KAVY;
+
   const countText = document.getElementById("cups-count-text");
-  if (countText) countText.textContent = `${u.drank} / ${totalCups}`;
+  const balanceText = document.getElementById("cups-balance-text");
+
+  if (countText) countText.textContent = `${drankCups} / ${totalCups}`;
+  
+  if (balanceText) {
+    if (balance < 0) {
+      balanceText.textContent = `Dluh: ${Math.abs(balance)} ☕ (${Math.abs(balanceMoney)} Kč)`;
+      balanceText.className = "text-danger";
+    } else {
+      balanceText.textContent = `Zbývá: ${balance} ☕ (${balanceMoney} Kč)`;
+      balanceText.className = "text-success";
+    }
+  }
 
   const grid = document.getElementById("cups-grid");
   if (!grid) return;
@@ -385,22 +394,31 @@ function updateCupsView() {
     </svg>
   `;
 
-  for (let i = 1; i <= totalCups; i++) {
+  // Vykreslíme tolik kalíšků, kolik je buď předplaceno, nebo vypito (podle toho, co je větší)
+  const gridCount = Math.max(totalCups, drankCups);
+
+  for (let i = 1; i <= gridCount; i++) {
     const div = document.createElement("div");
     div.classList.add("mini-cup");
     div.innerHTML = miniCupSVG;
 
-    if (i <= u.drank) {
-      div.classList.add("empty");
+    if (i <= totalCups) {
+      if (i <= drankCups) {
+        div.classList.add("full");
+      } else {
+        div.classList.add("empty");
+      }
     } else {
-      div.classList.add("full");
+      // Jsme za hranicí předplaceného, takže je to dluh
+      div.classList.add("debt");
     }
+    
     grid.appendChild(div);
   }
 
   const liquid = document.getElementById("liquid");
   if (liquid) {
-    liquid.style.opacity = u.drank >= totalCups ? "0.15" : "1";
+    liquid.style.opacity = drankCups >= totalCups && totalCups > 0 ? "0.15" : "1";
   }
 }
 
@@ -596,9 +614,18 @@ function renderAdminUsers() {
     if (select) select.innerHTML += `<option value="${u.id}">${u.name}</option>`;
 
     if (tbody) {
+      const balance = Number(u.prepaid) - Number(u.drank);
+      const isDebt = balance < 0;
+      const statusColor = isDebt ? "var(--heart-active)" : "var(--text-main)";
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td style="font-weight:700;">${u.name}</td>
+        <td style="font-weight:700;">
+          ${u.name}<br>
+          <span style="font-size:0.75rem; color:${statusColor}; font-weight:800;">
+            Zůstatek: ${balance}
+          </span>
+        </td>
         <td style="white-space:nowrap;">
           <input type="number" id="d-${u.id}" value="${u.drank}" style="width:36px; padding:2px;">
           / <input type="number" id="p-${u.id}" value="${u.prepaid}" style="width:36px; padding:2px;">
@@ -688,7 +715,7 @@ function renderUsageStats() {
   const monthlyStats = {};
   
   state.users.forEach(u => {
-    weeklyStats[u.id] = [0,0,0,0,0]; // Po-Pá
+    weeklyStats[u.id] = [0,0,0,0,0]; 
     monthlyStats[u.id] = 0;
   });
 

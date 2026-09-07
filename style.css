@@ -1,7 +1,5 @@
 :root {
   color-scheme: light;
-  
-  /* Celkové světlé barvy aplikace */
   --bg-app: #f5eee6;
   --card-bg: #fffbf7;
   --card-border: #e6dacd;
@@ -11,19 +9,16 @@
   --primary-hover: #3b1e0f;
   --accent: #b86e3b;
 
-  /* Světlý porcelánový šálek na světlém pozadí */
   --porcelain-base: #dfd1bf;
   --porcelain-mid: #eee2d3;
   --porcelain-highlight: #ffffff;
   --porcelain-shadow: #9e8d7c;
 
-  /* Kávová zrnka (kontrastní tmavá) */
   --bean-active: #542d17;
   --bean-line-active: #ac8a77;
   --bean-inactive: #d9cbbe;
   --bean-line-inactive: #c5b5a6;
 
-  /* Srdíčka */
   --heart-active: #e03838;
   --heart-inactive: #dac8b8;
 
@@ -46,7 +41,6 @@ body {
   color: var(--text-main);
   display: flex;
   justify-content: center;
-  /* Použijeme 100dvh místo vh - díky tomu se na mobilech ignoruje schovávací lišta URL v prohlížeči */
   min-height: 100dvh; 
   padding: 10px 12px;
   font-size: 1rem;
@@ -60,40 +54,31 @@ body {
   flex-direction: column;
   gap: 10px;
   position: relative;
-  /* Nové: Kontejner aplikace se roztáhne na výšku displeje */
   flex: 1; 
 }
 
-/* --- Nové flexibilní rozložení hlavní obrazovky --- */
+.hidden { display: none !important; }
+.content-with-bottom-bar { padding-bottom: 60px; }
 
+/* Nové flexibilní rozložení hlavní obrazovky */
 .flex-main-layout:not(.hidden) {
-  flex: 1; /* Roztáhne hlavní pohled na veškeré zbylé místo pod hlavičkou */
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
-
-/* Horní pružná část - rovnoměrně rozděluje výšku mezi prvky */
 .main-upper-space {
   flex: 1; 
   display: flex;
   flex-direction: column;
-  justify-content: space-evenly; /* Rozestoupí karty a šálek podle volného místa na displeji */
-  gap: 10px; /* Pojistka pro extra malé displeje, aby se prvky neslepily */
+  justify-content: space-evenly; 
+  gap: 10px; 
   padding-bottom: 10px;
 }
-
-/* Spodní pevná část s předplatným a pokladnou - natlačená k dolnímu okraji */
 .main-lower-sticky {
-  margin-top: auto; /* Toto pravidlo natlačí kontejner úplně dolů */
+  margin-top: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.hidden { display: none !important; }
-
-.content-with-bottom-bar {
-  padding-bottom: 60px;
 }
 
 /* Horní lišta */
@@ -131,57 +116,48 @@ body {
   padding: 12px 14px;
   box-shadow: var(--shadow);
 }
-/* Kávový štítek - vzdušnější na výšku */
+
+/* Kávový štítek */
 .coffee-badge {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
-  padding: 16px 18px; /* Větší vnitřní okraje pro vzdušnost */
+  padding: 16px 18px; 
   box-shadow: var(--shadow);
 }
-
 .badge-tag {
   font-size: 0.7rem;
   letter-spacing: 1px;
   font-weight: 800;
   color: var(--accent);
 }
-
 .badge-title {
   font-size: 1.15rem;
   font-weight: 800;
-  margin: 4px 0 16px 0; /* Větší mezera pod nadpisem */
+  margin: 4px 0 16px 0;
   color: var(--primary);
-  /* Dovolíme zalomení textu, aby se dlouhé názvy nemačkaly na jeden řádek */
   white-space: normal;
   line-height: 1.25;
 }
-
-/* Vrácení vlastností pod sebe s většími rozestupy (rozprostření na výšku) */
 .coffee-attributes {
   display: flex;
   flex-direction: column;
-  gap: 12px; /* Štědřejší vertikální mezera mezi řádky */
+  gap: 12px;
 }
-
 .attr-row {
   display: flex;
-  justify-content: space-between; /* Roztažení textu a zrnek na celou šířku */
+  justify-content: space-between; 
   align-items: center;
 }
-
 .attr-label {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-main);
 }
-
 .beans-meter {
   display: flex;
   gap: 6px;
 }
-
-/* Zrnka zpět na původní reprezentativní velikosti */
 .bean-svg {
   width: 20px;
   height: 20px;
@@ -203,11 +179,10 @@ body {
   opacity: 0.6;
   pointer-events: none;
 }
-/* Rozmístění srdíček blíž k sobě na střed */
 .hearts-row-full {
   display: flex;
-  justify-content: center; /* Původně bylo space-between */
-  gap: 24px;               /* Pevná, vizuálně příjemná mezera */
+  justify-content: center;
+  gap: 24px;
   align-items: center;
   width: 100%;
 }
@@ -301,11 +276,15 @@ body {
 .cups-title-row {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   font-size: 0.9rem;
   font-weight: 700;
   margin-bottom: 8px;
   color: var(--text-muted);
 }
+.text-danger { color: var(--heart-active) !important; font-weight: 800; }
+.text-success { color: var(--primary); font-weight: 800; }
+
 .cups-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(26px, 1fr));
@@ -316,6 +295,7 @@ body {
 .mini-cup svg { width: 100%; height: 100%; transition: opacity 0.3s, fill 0.3s; }
 .mini-cup.full svg { fill: var(--primary); opacity: 1; }
 .mini-cup.empty svg { fill: var(--card-border); opacity: 0.45; }
+.mini-cup.debt svg { fill: var(--heart-active); opacity: 1; } /* Červený šálek na dluh */
 
 /* Pokladna */
 .treasury-card {
@@ -506,7 +486,7 @@ input[type="text"], input[type="password"], input[type="number"], select.input-s
 .admin-table th, .admin-table td { padding: 6px 4px; text-align: left; border-bottom: 1px solid var(--card-border); }
 .admin-table input { width: 50px; padding: 4px; font-size: 0.85rem; }
 
-/* --- Rozbalovací Admin Karty (details) --- */
+/* Rozbalovací Admin Karty (details) */
 details.admin-details {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -520,19 +500,14 @@ details.admin-details summary {
   font-size: 1.05rem;
   color: var(--primary);
   cursor: pointer;
-  list-style: none; /* Skryje výchozí trojúhelník */
+  list-style: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-details.admin-details summary::-webkit-details-marker {
-  display: none;
-}
-details.admin-details[open] summary .dropdown-arrow {
-  transform: rotate(180deg);
-}
+details.admin-details summary::-webkit-details-marker { display: none; }
+details.admin-details[open] summary .dropdown-arrow { transform: rotate(180deg); }
 
-/* Týdenní a měsíční řádky */
 .stats-list {
   display: flex;
   flex-direction: column;
@@ -555,8 +530,6 @@ details.admin-details[open] summary .dropdown-arrow {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* 5 šálků pro týdenní přehled */
 .week-cups {
   display: flex;
   gap: 6px;
@@ -566,10 +539,7 @@ details.admin-details[open] summary .dropdown-arrow {
   width: 24px;
   height: 24px;
 }
-.day-cup {
-  width: 100%;
-  height: 100%;
-}
+.day-cup { width: 100%; height: 100%; }
 .day-cup svg {
   width: 100%;
   height: 100%;
@@ -577,11 +547,7 @@ details.admin-details[open] summary .dropdown-arrow {
   opacity: 0.45;
   transition: opacity 0.3s, fill 0.3s;
 }
-.day-cup.drank svg {
-  fill: var(--primary);
-  opacity: 1;
-}
-/* Červený odznáček pro víc než 1 kávu denně */
+.day-cup.drank svg { fill: var(--primary); opacity: 1; }
 .multi-cup-badge {
   position: absolute;
   top: -6px;
@@ -598,8 +564,6 @@ details.admin-details[open] summary .dropdown-arrow {
   justify-content: center;
   border: 1px solid var(--card-bg);
 }
-
-/* Zobrazení pro měsíční přehled */
 .month-stat {
   font-size: 0.95rem;
   font-weight: 800;
