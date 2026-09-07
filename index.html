@@ -45,169 +45,175 @@
     </section>
 
     <!-- HLAVNÍ OBRAZOVKA -->
-    <section id="main-view" class="hidden content-with-bottom-bar">
+    <section id="main-view" class="hidden content-with-bottom-bar flex-main-layout">
       
-      <!-- Kávový štítek -->
-      <div class="coffee-badge">
-        <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
-        <div class="badge-title" id="coffee-name">Brasil Pergamino Sul de Minas</div>
-        
-        <div class="coffee-attributes">
-          <div class="attr-row">
-            <span class="attr-label">Acidita</span>
-            <div class="beans-meter" id="beans-acidita"></div>
+      <!-- HORNÍ PRUŽNÁ ČÁST (Karty a šálek se rovnoměrně rozprostřou) -->
+      <div class="main-upper-space">
+        <!-- 1. Kávový štítek -->
+        <div class="coffee-badge">
+          <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
+          <div class="badge-title" id="coffee-name">Brasil Pergamino Sul de Minas</div>
+          
+          <div class="coffee-attributes">
+            <div class="attr-row">
+              <span class="attr-label">Acidita</span>
+              <div class="beans-meter" id="beans-acidita"></div>
+            </div>
+            <div class="attr-row">
+              <span class="attr-label">Intenzita</span>
+              <div class="beans-meter" id="beans-intenzita"></div>
+            </div>
+            <div class="attr-row">
+              <span class="attr-label">Pražení</span>
+              <div class="beans-meter" id="beans-prazeni"></div>
+            </div>
           </div>
-          <div class="attr-row">
-            <span class="attr-label">Intenzita</span>
-            <div class="beans-meter" id="beans-intenzita"></div>
+        </div>
+
+        <!-- 2. Kartička se srdíčky (vycentrovaná, pevné mezery) -->
+        <div class="rating-card rating-box">
+          <div class="hearts-row-full" id="hearts-container">
+            <button type="button" class="heart-btn" data-val="1" aria-label="1 srdíčko">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+            <button type="button" class="heart-btn" data-val="2" aria-label="2 srdíčka">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+            <button type="button" class="heart-btn" data-val="3" aria-label="3 srdíčka">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+            <button type="button" class="heart-btn" data-val="4" aria-label="4 srdíčka">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+            <button type="button" class="heart-btn" data-val="5" aria-label="5 srdíček">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
           </div>
-          <div class="attr-row">
-            <span class="attr-label">Pražení</span>
-            <div class="beans-meter" id="beans-prazeni"></div>
+        </div>
+
+        <!-- 3. Realistický šálek s podšálkem a párou -->
+        <div class="cup-center">
+          <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu">
+            <svg viewBox="0 0 270 195" class="cup-svg">
+              <defs>
+                <radialGradient id="table-ambient" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="rgba(0,0,0,0.38)" />
+                  <stop offset="65%" stop-color="rgba(0,0,0,0.16)" />
+                  <stop offset="100%" stop-color="rgba(0,0,0,0)" />
+                </radialGradient>
+
+                <linearGradient id="saucer-body-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="var(--porcelain-highlight)" />
+                  <stop offset="28%" stop-color="var(--porcelain-mid)" />
+                  <stop offset="70%" stop-color="var(--porcelain-base)" />
+                  <stop offset="100%" stop-color="var(--porcelain-shadow)" />
+                </linearGradient>
+
+                <linearGradient id="cup-body-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="var(--porcelain-mid)" />
+                  <stop offset="18%" stop-color="var(--porcelain-highlight)" />
+                  <stop offset="65%" stop-color="var(--porcelain-base)" />
+                  <stop offset="100%" stop-color="var(--porcelain-shadow)" />
+                </linearGradient>
+
+                <linearGradient id="handle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="var(--porcelain-highlight)" />
+                  <stop offset="40%" stop-color="var(--porcelain-mid)" />
+                  <stop offset="80%" stop-color="var(--porcelain-base)" />
+                  <stop offset="100%" stop-color="var(--porcelain-shadow)" />
+                </linearGradient>
+
+                <linearGradient id="rim-bevel" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="var(--porcelain-highlight)" />
+                  <stop offset="35%" stop-color="var(--porcelain-mid)" />
+                  <stop offset="75%" stop-color="var(--porcelain-base)" />
+                  <stop offset="100%" stop-color="var(--porcelain-shadow)" />
+                </linearGradient>
+
+                <linearGradient id="inner-wall-shadow" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="var(--porcelain-shadow)" stop-opacity="0.85" />
+                  <stop offset="100%" stop-color="var(--porcelain-mid)" stop-opacity="0.15" />
+                </linearGradient>
+
+                <radialGradient id="coffee-crema" cx="42%" cy="42%" r="60%">
+                  <stop offset="0%" stop-color="#ba6b2c" />
+                  <stop offset="35%" stop-color="#753713" />
+                  <stop offset="75%" stop-color="#321406" />
+                  <stop offset="100%" stop-color="#180702" />
+                </radialGradient>
+
+                <filter id="steam-blur" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="5.5" />
+                </filter>
+              </defs>
+
+              <!-- Pára -->
+              <g class="steam-group" filter="url(#steam-blur)">
+                <path class="steam-puff steam-1" d="M 108 50 Q 102 34 108 18" />
+                <path class="steam-puff steam-2" d="M 130 48 Q 136 32 130 14" />
+                <path class="steam-puff steam-3" d="M 152 50 Q 146 34 152 18" />
+              </g>
+
+              <!-- Podšálek -->
+              <g id="saucer-complete">
+                <ellipse cx="130" cy="178" rx="108" ry="15" fill="url(#table-ambient)" />
+                <ellipse cx="130" cy="162" rx="112" ry="22" fill="url(#saucer-body-grad)" />
+                <ellipse cx="130" cy="161.5" rx="98" ry="17.5" fill="var(--porcelain-base)" />
+                <ellipse cx="130" cy="162.5" rx="92" ry="14.5" fill="var(--porcelain-shadow)" opacity="0.32" />
+                <ellipse cx="130" cy="158" rx="66" ry="14" fill="var(--porcelain-shadow)" opacity="0.65" />
+                <ellipse cx="130" cy="157.5" rx="62" ry="12.5" fill="var(--porcelain-mid)" />
+                <path d="M 76 156 C 90 168, 170 168, 184 156 C 170 172, 90 172, 76 156 Z" fill="rgba(0,0,0,0.6)" />
+              </g>
+
+              <!-- Ouško -->
+              <g id="cup-handle-complete">
+                <ellipse cx="178" cy="124" rx="12" ry="8" fill="rgba(0,0,0,0.4)" />
+                <path d="M 194 56 C 246 58, 252 132, 182 132 C 172 132, 172 118, 184 117 C 228 114, 226 73, 186 70 Z" fill="url(#handle-grad)" />
+                <path d="M 194 57 C 244 59, 248 130, 182 131" fill="none" stroke="var(--porcelain-highlight)" stroke-width="2.6" stroke-linecap="round" opacity="0.8" />
+                <path d="M 186 70 C 193 70, 195 63, 194 56 Z" fill="var(--porcelain-shadow)" opacity="0.55" />
+              </g>
+
+              <!-- Tělo šálku -->
+              <g id="cup-body-layer">
+                <path d="M 80 155 C 92 168, 168 168, 180 155 C 168 165, 92 165, 80 155 Z" fill="rgba(0,0,0,0.85)" />
+                <path d="M 48.5 52 C 48 92, 64 140, 80 155 C 94 167.5, 166 167.5, 180 155 C 196 140, 212 92, 211.5 52 Z" fill="url(#cup-body-grad)" />
+                <path d="M 80 155 C 92 167.5, 168 167.5, 180 155 C 168 164, 92 164, 80 155 Z" fill="var(--porcelain-shadow)" />
+                <path d="M 68 56 C 65 92, 74 134, 90 152 C 82 148, 70 108, 75 58 Z" fill="rgba(255,255,255,0.22)" />
+                <ellipse cx="130" cy="52" rx="81.5" ry="18.5" fill="url(#rim-bevel)" />
+                <ellipse cx="130" cy="51.5" rx="78.5" ry="17" fill="none" stroke="var(--porcelain-highlight)" stroke-width="1.8" opacity="0.75" />
+                <ellipse cx="130" cy="52.5" rx="74.5" ry="15.5" fill="var(--porcelain-base)" />
+                <ellipse cx="130" cy="53" rx="73" ry="15" fill="url(#inner-wall-shadow)" />
+                <ellipse id="liquid" cx="130" cy="55" rx="69" ry="13.5" fill="url(#coffee-crema)" />
+                <ellipse cx="115" cy="53.5" rx="38" ry="5" fill="rgba(255, 230, 195, 0.22)" />
+              </g>
+            </svg>
+            <div class="cup-click-label">Vypít kávu ☕</div>
+          </div>
+          <button id="undo-btn" class="btn-undo hidden">↩ Omyl? Vrátit 1 kávu</button>
+        </div>
+      </div> <!-- /Konec horní pružné části -->
+
+      <!-- SPODNÍ PŘILEPENÁ ČÁST (Vždy u spodního okraje) -->
+      <div class="main-lower-sticky">
+        <!-- Dynamická mřížka šálků předplatného -->
+        <div class="cups-container">
+          <div class="cups-title-row">
+            <span>Stav předplatného</span>
+            <strong id="cups-count-text">0 / 0</strong>
+          </div>
+          <div class="cups-grid" id="cups-grid"></div>
+        </div>
+
+        <!-- Stav pokladny -->
+        <div class="treasury-card">
+          <div class="treasury-header">Stav pokladny</div>
+          <div class="treasury-row">
+            <span>Vybráno: <b id="fin-vybrano">0 Kč</b></span>
+            <span>Náklady: <b id="fin-naklady">0 Kč</b></span>
+            <span>Zůstatek: <b id="fin-rozdil">0 Kč</b></span>
           </div>
         </div>
-      </div>
-
-      <!-- Kartička se srdíčky přes celou šířku -->
-      <div class="rating-card rating-box">
-        <div class="hearts-row-full" id="hearts-container">
-          <button type="button" class="heart-btn" data-val="1" aria-label="1 srdíčko">
-            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          </button>
-          <button type="button" class="heart-btn" data-val="2" aria-label="2 srdíčka">
-            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          </button>
-          <button type="button" class="heart-btn" data-val="3" aria-label="3 srdíčka">
-            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          </button>
-          <button type="button" class="heart-btn" data-val="4" aria-label="4 srdíčka">
-            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          </button>
-          <button type="button" class="heart-btn" data-val="5" aria-label="5 srdíček">
-            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Realistický šálek s podšálkem a párou -->
-      <div class="cup-center">
-        <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu">
-          <svg viewBox="0 0 270 195" class="cup-svg">
-            <defs>
-              <radialGradient id="table-ambient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="rgba(0,0,0,0.38)" />
-                <stop offset="65%" stop-color="rgba(0,0,0,0.16)" />
-                <stop offset="100%" stop-color="rgba(0,0,0,0)" />
-              </radialGradient>
-
-              <linearGradient id="saucer-body-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="var(--porcelain-highlight)" />
-                <stop offset="28%" stop-color="var(--porcelain-mid)" />
-                <stop offset="70%" stop-color="var(--porcelain-base)" />
-                <stop offset="100%" stop-color="var(--porcelain-shadow)" />
-              </linearGradient>
-
-              <linearGradient id="cup-body-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="var(--porcelain-mid)" />
-                <stop offset="18%" stop-color="var(--porcelain-highlight)" />
-                <stop offset="65%" stop-color="var(--porcelain-base)" />
-                <stop offset="100%" stop-color="var(--porcelain-shadow)" />
-              </linearGradient>
-
-              <linearGradient id="handle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="var(--porcelain-highlight)" />
-                <stop offset="40%" stop-color="var(--porcelain-mid)" />
-                <stop offset="80%" stop-color="var(--porcelain-base)" />
-                <stop offset="100%" stop-color="var(--porcelain-shadow)" />
-              </linearGradient>
-
-              <linearGradient id="rim-bevel" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="var(--porcelain-highlight)" />
-                <stop offset="35%" stop-color="var(--porcelain-mid)" />
-                <stop offset="75%" stop-color="var(--porcelain-base)" />
-                <stop offset="100%" stop-color="var(--porcelain-shadow)" />
-              </linearGradient>
-
-              <linearGradient id="inner-wall-shadow" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="var(--porcelain-shadow)" stop-opacity="0.85" />
-                <stop offset="100%" stop-color="var(--porcelain-mid)" stop-opacity="0.15" />
-              </linearGradient>
-
-              <radialGradient id="coffee-crema" cx="42%" cy="42%" r="60%">
-                <stop offset="0%" stop-color="#ba6b2c" />
-                <stop offset="35%" stop-color="#753713" />
-                <stop offset="75%" stop-color="#321406" />
-                <stop offset="100%" stop-color="#180702" />
-              </radialGradient>
-
-              <filter id="steam-blur" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="5.5" />
-              </filter>
-            </defs>
-
-            <!-- Pára -->
-            <g class="steam-group" filter="url(#steam-blur)">
-              <path class="steam-puff steam-1" d="M 108 50 Q 102 34 108 18" />
-              <path class="steam-puff steam-2" d="M 130 48 Q 136 32 130 14" />
-              <path class="steam-puff steam-3" d="M 152 50 Q 146 34 152 18" />
-            </g>
-
-            <!-- Podšálek -->
-            <g id="saucer-complete">
-              <ellipse cx="130" cy="178" rx="108" ry="15" fill="url(#table-ambient)" />
-              <ellipse cx="130" cy="162" rx="112" ry="22" fill="url(#saucer-body-grad)" />
-              <ellipse cx="130" cy="161.5" rx="98" ry="17.5" fill="var(--porcelain-base)" />
-              <ellipse cx="130" cy="162.5" rx="92" ry="14.5" fill="var(--porcelain-shadow)" opacity="0.32" />
-              <ellipse cx="130" cy="158" rx="66" ry="14" fill="var(--porcelain-shadow)" opacity="0.65" />
-              <ellipse cx="130" cy="157.5" rx="62" ry="12.5" fill="var(--porcelain-mid)" />
-              <path d="M 76 156 C 90 168, 170 168, 184 156 C 170 172, 90 172, 76 156 Z" fill="rgba(0,0,0,0.6)" />
-            </g>
-
-            <!-- Ouško -->
-            <g id="cup-handle-complete">
-              <ellipse cx="178" cy="124" rx="12" ry="8" fill="rgba(0,0,0,0.4)" />
-              <path d="M 194 56 C 246 58, 252 132, 182 132 C 172 132, 172 118, 184 117 C 228 114, 226 73, 186 70 Z" fill="url(#handle-grad)" />
-              <path d="M 194 57 C 244 59, 248 130, 182 131" fill="none" stroke="var(--porcelain-highlight)" stroke-width="2.6" stroke-linecap="round" opacity="0.8" />
-              <path d="M 186 70 C 193 70, 195 63, 194 56 Z" fill="var(--porcelain-shadow)" opacity="0.55" />
-            </g>
-
-            <!-- Tělo šálku -->
-            <g id="cup-body-layer">
-              <path d="M 80 155 C 92 168, 168 168, 180 155 C 168 165, 92 165, 80 155 Z" fill="rgba(0,0,0,0.85)" />
-              <path d="M 48.5 52 C 48 92, 64 140, 80 155 C 94 167.5, 166 167.5, 180 155 C 196 140, 212 92, 211.5 52 Z" fill="url(#cup-body-grad)" />
-              <path d="M 80 155 C 92 167.5, 168 167.5, 180 155 C 168 164, 92 164, 80 155 Z" fill="var(--porcelain-shadow)" />
-              <path d="M 68 56 C 65 92, 74 134, 90 152 C 82 148, 70 108, 75 58 Z" fill="rgba(255,255,255,0.22)" />
-              <ellipse cx="130" cy="52" rx="81.5" ry="18.5" fill="url(#rim-bevel)" />
-              <ellipse cx="130" cy="51.5" rx="78.5" ry="17" fill="none" stroke="var(--porcelain-highlight)" stroke-width="1.8" opacity="0.75" />
-              <ellipse cx="130" cy="52.5" rx="74.5" ry="15.5" fill="var(--porcelain-base)" />
-              <ellipse cx="130" cy="53" rx="73" ry="15" fill="url(#inner-wall-shadow)" />
-              <ellipse id="liquid" cx="130" cy="55" rx="69" ry="13.5" fill="url(#coffee-crema)" />
-              <ellipse cx="115" cy="53.5" rx="38" ry="5" fill="rgba(255, 230, 195, 0.22)" />
-            </g>
-          </svg>
-          <div class="cup-click-label">Dnes piju kávu ☕</div>
-        </div>
-        <button id="undo-btn" class="btn-undo hidden">↩ Omyl? Vrátit 1 kávu</button>
-      </div>
-
-      <!-- Dynamická mřížka šálků předplatného -->
-      <div class="cups-container">
-        <div class="cups-title-row">
-          <span>Stav předplatného</span>
-          <strong id="cups-count-text">0 / 0</strong>
-        </div>
-        <div class="cups-grid" id="cups-grid"></div>
-      </div>
-
-      <!-- Stav pokladny -->
-      <div class="treasury-card">
-        <div class="treasury-header">Stav pokladny</div>
-        <div class="treasury-row">
-          <span>Vybráno: <b id="fin-vybrano">0 Kč</b></span>
-          <span>Náklady: <b id="fin-naklady">0 Kč</b></span>
-          <span>Zůstatek: <b id="fin-rozdil">0 Kč</b></span>
-        </div>
-      </div>
+      </div> <!-- /Konec spodní přilepené části -->
 
     </section>
 

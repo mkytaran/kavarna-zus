@@ -46,7 +46,8 @@ body {
   color: var(--text-main);
   display: flex;
   justify-content: center;
-  min-height: 100vh;
+  /* Použijeme 100dvh místo vh - díky tomu se na mobilech ignoruje schovávací lišta URL v prohlížeči */
+  min-height: 100dvh; 
   padding: 10px 12px;
   font-size: 1rem;
   line-height: 1.35;
@@ -59,6 +60,34 @@ body {
   flex-direction: column;
   gap: 10px;
   position: relative;
+  /* Nové: Kontejner aplikace se roztáhne na výšku displeje */
+  flex: 1; 
+}
+
+/* --- Nové flexibilní rozložení hlavní obrazovky --- */
+
+.flex-main-layout:not(.hidden) {
+  flex: 1; /* Roztáhne hlavní pohled na veškeré zbylé místo pod hlavičkou */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Horní pružná část - rovnoměrně rozděluje výšku mezi prvky */
+.main-upper-space {
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly; /* Rozestoupí karty a šálek podle volného místa na displeji */
+  gap: 10px; /* Pojistka pro extra malé displeje, aby se prvky neslepily */
+  padding-bottom: 10px;
+}
+
+/* Spodní pevná část s předplatným a pokladnou - natlačená k dolnímu okraji */
+.main-lower-sticky {
+  margin-top: auto; /* Toto pravidlo natlačí kontejner úplně dolů */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .hidden { display: none !important; }
@@ -169,9 +198,11 @@ body {
   opacity: 0.6;
   pointer-events: none;
 }
+/* Rozmístění srdíček blíž k sobě na střed */
 .hearts-row-full {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Původně bylo space-between */
+  gap: 24px;               /* Pevná, vizuálně příjemná mezera */
   align-items: center;
   width: 100%;
 }
