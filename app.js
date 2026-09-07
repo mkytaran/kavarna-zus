@@ -1,15 +1,6 @@
 // URL vašeho Google Apps Script Web App
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
 
-// Popisky hodnocení kávy srdíčky
-const RATING_DESCRIPTIONS = {
-  1: "1 – Nechutná mi",
-  2: "2 – Nic moc",
-  3: "3 – Dobrá",
-  4: "4 – Fajn kafe",
-  5: "5 – Skvělý kafe"
-};
-
 // Buclaté kávové zrno s decentní zkrácenou esovitou rýhou
 function createBeanSVG(isActive) {
   return `
@@ -43,7 +34,6 @@ if ("serviceWorker" in navigator) {
 
 // 1. TÉMA A SYSTÉMOVÉ LIŠTY
 const themeBtn = document.getElementById("theme-btn");
-
 function initTheme() {
   const saved = localStorage.getItem("zus_theme") || "system";
   applyTheme(saved);
@@ -56,21 +46,17 @@ function applyTheme(theme) {
     effectiveTheme = isDark ? "dark" : "light";
   }
 
-  // Nastavíme atribut pro CSS proměnné a color-scheme
   document.documentElement.setAttribute("data-theme", effectiveTheme);
   document.documentElement.style.colorScheme = effectiveTheme;
 
-  // Cílová barva lišty
   const targetColor = effectiveTheme === "dark" ? "#1c1714" : "#f5eee6";
-
-  // Spolehlivá aktualizace meta tagu pro Android/Chrome
   let meta = document.getElementById("theme-color-meta");
   if (!meta) {
     meta = document.querySelector('meta[name="theme-color"]');
   }
 
   if (meta) {
-    meta.removeAttribute("media"); // Odstraní podmínku, aby platil bez ohledu na režim OS
+    meta.removeAttribute("media");
     meta.setAttribute("content", targetColor);
   } else {
     meta = document.createElement("meta");
@@ -94,20 +80,7 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e =
   }
 });
 
-themeBtn.addEventListener("click", () => {
-  const current = document.documentElement.getAttribute("data-theme");
-  const next = current === "dark" ? "light" : "dark";
-  localStorage.setItem("zus_theme", next);
-  applyTheme(next);
-});
-
-window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e => {
-  if (localStorage.getItem("zus_theme") === "system") {
-    applyTheme("system");
-  }
-});
-
-// 2. MEZIPAMĚŤ PRO OKAMŽITÉ ZOBRAZENÍ BEZ ČEKÁNÍ NA SÍŤ
+// 2. MEZIPAMĚŤ PRO OKAMŽITÉ ZOBRAZENÍ
 function restoreCachedCoffeeData() {
   try {
     const cachedKava = localStorage.getItem("zus_cached_kava");
@@ -161,10 +134,10 @@ function showMainScreen(user) {
   initRating();
 }
 
-// 4. NAČTENÍ DAT ZE SERVERU S BLOKACÍ ZDVOJENÉHO HODNOCENÍ
+// 4. NAČTENÍ DAT ZE SERVERU
 async function loadData() {
-  const ratingBox = document.querySelector(".rating-box");
-  if (ratingBox) ratingBox.classList.add("is-syncing");
+  const syncRow = document.querySelector(".badge-top-row");
+  if (syncRow) syncRow.classList.add("is-syncing");
 
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getData`);
@@ -199,7 +172,7 @@ async function loadData() {
   } catch (err) {
     console.error("Chyba při synchronizaci:", err);
   } finally {
-    if (ratingBox) ratingBox.classList.remove("is-syncing");
+    if (syncRow) syncRow.classList.remove("is-syncing");
   }
 }
 
@@ -259,7 +232,7 @@ function renderCoffeeBadge() {
   renderBeansMeter("beans-prazeni", state.kava.prazeni || 3);
 }
 
-// 6. HODNOCENÍ SRDÍČKY
+// 6. HODNOCENÍ POUZE SRDÍČKY (ČISTÉ BEZ TEXTŮ)
 function initRating() {
   const hearts = document.querySelectorAll("#hearts-container .heart-btn");
   let myRating = 0;
@@ -324,10 +297,6 @@ function paintHearts(val) {
       btn.classList.remove("active");
     }
   });
-  const labelEl = document.getElementById("rating-text");
-  if (labelEl) {
-    labelEl.textContent = RATING_DESCRIPTIONS[val] || "Klepni na srdíčko";
-  }
 }
 
 // 7. ODKLIKÁVÁNÍ KÁVY
