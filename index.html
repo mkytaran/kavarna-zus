@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>ZUŠkafe</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=1.6">
+  <link rel="stylesheet" href="style.css?v=1.7">
 </head>
 <body>
   <div class="app-container">
@@ -93,7 +93,11 @@
 
         <!-- 3. Realistický šálek s podšálkem a párou -->
         <div class="cup-center">
-          <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu">
+          <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu" style="position: relative;">
+            
+            <!-- NOVÉ: Červený odznáček zobrazený po kliknutí -->
+            <div id="main-cup-badge" class="multi-cup-badge hidden" style="top: 25px; right: 40px; width: 32px; height: 32px; font-size: 1.1rem; border: 2px solid var(--bg-app); z-index: 10;">1</div>
+            
             <svg viewBox="0 0 270 195" class="cup-svg">
               <defs>
                 <radialGradient id="table-ambient" cx="50%" cy="50%" r="50%">
@@ -255,6 +259,20 @@
           <button id="admin-save-coffee" class="btn btn-primary">Uložit a nasadit do kávovaru</button>
         </div>
 
+        <!-- PŘIPSAT PLATBU -->
+        <div class="card">
+          <h3>Připsat novou platbu</h3>
+          <div class="input-group">
+            <label for="payment-user">Kafař</label>
+            <select id="payment-user" class="input-select"></select>
+          </div>
+          <div class="input-group">
+            <label for="payment-amount">Zaplacená částka (Kč)</label>
+            <input type="number" id="payment-amount" placeholder="Např. 500">
+          </div>
+          <button id="admin-save-payment" class="btn btn-primary">Připsat částku k účtu</button>
+        </div>
+
         <!-- 1. TENTO TÝDEN -->
         <details class="card admin-details">
           <summary>Tento týden (Po-Pá) <span class="dropdown-arrow">▼</span></summary>
@@ -290,6 +308,6 @@
       </section>
 
   </div>
-  <script src="app.js?v=2.6"></script>
+  <script src="app.js?v=2.7"></script>
 </body>
 </html>
