@@ -131,13 +131,12 @@ body {
   padding: 12px 14px;
   box-shadow: var(--shadow);
 }
-
-/* Kávový štítek */
+/* Kávový štítek - vzdušnější na výšku */
 .coffee-badge {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
-  padding: 10px 14px;
+  padding: 16px 18px; /* Větší vnitřní okraje pro vzdušnost */
   box-shadow: var(--shadow);
 }
 
@@ -151,32 +150,38 @@ body {
 .badge-title {
   font-size: 1.15rem;
   font-weight: 800;
-  margin: 2px 0 8px 0;
+  margin: 4px 0 16px 0; /* Větší mezera pod nadpisem */
   color: var(--primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Dovolíme zalomení textu, aby se dlouhé názvy nemačkaly na jeden řádek */
+  white-space: normal;
+  line-height: 1.25;
 }
 
+/* Vrácení vlastností pod sebe s většími rozestupy (rozprostření na výšku) */
 .coffee-attributes {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px; /* Štědřejší vertikální mezera mezi řádky */
 }
+
 .attr-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* Roztažení textu a zrnek na celou šířku */
   align-items: center;
 }
+
 .attr-label {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-main);
 }
+
 .beans-meter {
   display: flex;
   gap: 6px;
 }
+
+/* Zrnka zpět na původní reprezentativní velikosti */
 .bean-svg {
   width: 20px;
   height: 20px;
