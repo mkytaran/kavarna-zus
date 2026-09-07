@@ -22,7 +22,8 @@ let state = {
   allCoffees: [],
   ratings: [],
   currentUser: null,
-  clicksInSession: 0
+  clicksInSession: 0,
+  logs: []
 };
 
 // Registrace Service Workeru pro PWA instalaci
@@ -103,6 +104,7 @@ async function loadData() {
     }
     state.allCoffees = data.allCoffees || [];
     state.ratings = data.ratings || [];
+    state.logs = data.logs || [];
     localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
 
     renderCoffeeBadge();
@@ -535,14 +537,36 @@ function renderAdminUsers() {
   state.users.forEach(u => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${u.name}</td>
-      <td><input type="number" id="p-${u.id}" value="${u.prepaid}"></td>
-      <td><input type="number" id="d-${u.id}" value="${u.drank}"></td>
-      <td><button class="btn btn-primary" style="padding: 6px 10px; font-size: 0.85rem;" onclick="adminSaveUser(${u.id})">Uložit</button></td>
+      <td style="font-weight:700;">${u.name}</td>
+      <td style="white-space:nowrap;">
+        <input type="number" id="d-${u.id}" value="${u.drank}" style="width:36px; padding:2px;">
+        / <input type="number" id="p-${u.id}" value="${u.prepaid}" style="width:36px; padding:2px;">
+      </td>
+      <td><input type="number" id="tp-${u.id}" value="${u.totalPaid}" style="width:55px;"></td>
+      <td style="text-align:center; font-weight:800; color:var(--primary);">${u.totalDrank}</td>
+      <td><button class="btn btn-primary" style="padding: 6px; font-size: 0.75rem;" onclick="adminSaveUser(${u.id})">Uložit</button></td>
     `;
     tbody.appendChild(tr);
   });
 }
+
+window.adminSaveUser = async function(id) {
+  const drk = Number(document.getElementById(`d-${id}`).value);
+  const prep = Number(document.getElementById(`p-${id}`).value);
+  const tPaid = Number(document.getElementById(`tp-${id}`).value);
+  
+  const u = state.users.find(x => x.id == id);
+  if (!u) return;
+  u.drank = drk;
+  u.prepaid = prep;
+  u.totalPaid = tPaid;
+
+  await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "adminUpdate", id: id, prepaid: prep, drank: drk, totalPaid: tPaid })
+  });
+  alert(`Uloženo: ${u.name}`);
+};
 
 window.adminSaveUser = async function(id) {
   const prep = Number(document.getElementById(`p-${id}`).value);
@@ -558,6 +582,117 @@ window.adminSaveUser = async function(id) {
   });
   alert(`Uloženo: ${u.name}`);
 };
+
+// --- Statistiky: Tento týden & Tento měsíc ---
+
+// Získání počtu pracovních dní v aktuálním měsíci
+function getWorkingDaysInCurrentMonth() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  let count = 0;
+  const date = new Date(year, month, 1);
+  while (date.getMonth() === month) {
+    if (date.getDay() !== 0 && date.getDay() !== 6) count++;
+    date.setDate(date.getDate() + 1);
+  }
+  return count;
+}
+
+// Spuštění při otevření Admin View
+if (adminSwitchBtn) {
+  adminSwitchBtn.addEventListener("click", () => {
+    // ... původní ukrývání obrazovek
+    renderAdminCoffeeHistory();
+    renderAdminUsers();
+    renderUsageStats(); // NOVÉ
+  });
+}
+
+function renderUsageStats() {
+  const weeklyContainer = document.getElementById("admin-weekly-list");
+  const monthlyContainer = document.getElementById("admin-monthly-list");
+  if (!weeklyContainer || !monthlyContainer) return;
+
+  weeklyContainer.innerHTML = "";
+  monthlyContainer.innerHTML = "";
+
+  const now = new Date();
+  
+  // 1. Zjištění hranic aktuálního týdne (Po-Ne)
+  const currentDay = now.getDay() === 0 ? 7 : now.getDay();
+  const mondayThisWeek = new Date(now);
+  mondayThisWeek.setDate(now.getDate() - currentDay + 1);
+  mondayThisWeek.setHours(0,0,0,0);
+
+  // 2. Počet pracovních dnů v měsíci
+  const workingDaysInMonth = getWorkingDaysInCurrentMonth();
+  const currentMonthStr = now.getFullYear() + "-" + now.getMonth();
+
+  // Připravíme objekty pro výpočet
+  const weeklyStats = {};
+  const monthlyStats = {};
+  
+  state.users.forEach(u => {
+    weeklyStats[u.id] = [0,0,0,0,0]; // Po-Pá
+    monthlyStats[u.id] = 0;
+  });
+
+  // Průchod logy a plnění dat
+  state.logs.forEach(log => {
+    const d = new Date(log.date);
+    
+    // Test na tento týden
+    if (d >= mondayThisWeek) {
+      let dIndex = d.getDay() === 0 ? 6 : d.getDay() - 1; // 0=Po, 4=Pá
+      if (dIndex <= 4 && weeklyStats[log.userId]) { // ignorujeme víkendy pro výkres
+        weeklyStats[log.userId][dIndex] += log.diff;
+      }
+    }
+    
+    // Test na tento měsíc
+    if (d.getFullYear() + "-" + d.getMonth() === currentMonthStr && monthlyStats[log.userId] !== undefined) {
+      monthlyStats[log.userId] += log.diff;
+    }
+  });
+
+  // Vykreslení TENTO TÝDEN
+  const miniCupSVG = `<svg viewBox="0 0 24 24"><path d="M2 19h18v2H2zM20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3z"/></svg>`;
+  
+  state.users.forEach(u => {
+    // Má smysl kreslit jen ty, co něco pijí
+    const wData = weeklyStats[u.id];
+    let cupsHtml = "";
+    
+    wData.forEach(cupsDrank => {
+      let isDrankClass = cupsDrank > 0 ? "drank" : "";
+      let badgeHtml = cupsDrank > 1 ? `<div class="multi-cup-badge">${cupsDrank}</div>` : "";
+      
+      cupsHtml += `
+        <div class="day-cup-wrapper">
+          <div class="day-cup ${isDrankClass}">${miniCupSVG}</div>
+          ${badgeHtml}
+        </div>
+      `;
+    });
+
+    weeklyContainer.innerHTML += `
+      <div class="stat-row">
+        <div class="stat-name">${u.name}</div>
+        <div class="week-cups">${cupsHtml}</div>
+      </div>
+    `;
+
+    // Vykreslení TENTO MĚSÍC (např. 6/21)
+    const mDrank = monthlyStats[u.id];
+    monthlyContainer.innerHTML += `
+      <div class="stat-row">
+        <div class="stat-name">${u.name}</div>
+        <div class="month-stat">${mDrank} / ${workingDaysInMonth}</div>
+      </div>
+    `;
+  });
+}
 
 // Start aplikace
 restoreCachedCoffeeData();

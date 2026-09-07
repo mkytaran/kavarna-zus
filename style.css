@@ -504,3 +504,106 @@ input[type="text"], input[type="password"], input[type="number"] {
 .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .admin-table th, .admin-table td { padding: 6px 4px; text-align: left; border-bottom: 1px solid var(--card-border); }
 .admin-table input { width: 50px; padding: 4px; font-size: 0.85rem; }
+
+/* --- Rozbalovací Admin Karty (details) --- */
+details.admin-details {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+details.admin-details summary {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--primary);
+  cursor: pointer;
+  list-style: none; /* Skryje výchozí trojúhelník */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+details.admin-details summary::-webkit-details-marker {
+  display: none;
+}
+details.admin-details[open] summary .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* Týdenní a měsíční řádky */
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--card-border);
+}
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.stat-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 5 šálků pro týdenní přehled */
+.week-cups {
+  display: flex;
+  gap: 6px;
+}
+.day-cup-wrapper {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+.day-cup {
+  width: 100%;
+  height: 100%;
+}
+.day-cup svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--card-border);
+  opacity: 0.45;
+  transition: opacity 0.3s, fill 0.3s;
+}
+.day-cup.drank svg {
+  fill: var(--primary);
+  opacity: 1;
+}
+/* Červený odznáček pro víc než 1 kávu denně */
+.multi-cup-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background-color: #e03838;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 800;
+  width: 15px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--card-bg);
+}
+
+/* Zobrazení pro měsíční přehled */
+.month-stat {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--primary);
+  background: var(--treasury-bg);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
