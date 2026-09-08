@@ -1,8 +1,6 @@
 // URL vašeho Google Apps Script Web App
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
 
-const CENA_KAVY = 10;
-
 function createBeanSVG(isActive) {
   return `
     <svg viewBox="0 0 30 30" class="bean-svg ${isActive ? 'active' : 'inactive'}">
@@ -18,7 +16,7 @@ function createBeanSVG(isActive) {
 
 let state = {
   users: [],
-  finance: {},
+  finance: { cenaKavy: 15 },
   kava: { id: 1, nazev: "Brasil Pergamino Sul de Minas", acidita: 2, intenzita: 4, prazeni: 3, aktivni: 1 },
   allCoffees: [],
   ratings: [],
@@ -96,7 +94,7 @@ async function loadData() {
     const data = await res.json();
 
     state.users = data.users || [];
-    state.finance = data.finance || {};
+    state.finance = data.finance || { cenaKavy: 15 };
     if (data.kava) {
       state.kava = data.kava;
       localStorage.setItem("zus_cached_kava", JSON.stringify(data.kava));
@@ -109,6 +107,12 @@ async function loadData() {
     renderCoffeeBadge();
     renderFinance();
     initRating();
+
+    // Nastavení hodnoty do admininputu pro cenu kávy
+    const priceInput = document.getElementById("admin-coffee-price");
+    if (priceInput && state.finance.cenaKavy) {
+      priceInput.value = state.finance.cenaKavy;
+    }
 
     const savedUser = localStorage.getItem("zus_saved_user");
     if (savedUser) {
@@ -356,9 +360,10 @@ function updateCupsView() {
 
   const totalCups = Number(u.prepaid) || 0;
   const drankCups = Number(u.drank) || 0;
+  const cenaKavy = Number(state.finance.cenaKavy) || 15;
   
   const balance = totalCups - drankCups;
-  const balanceMoney = balance * CENA_KAVY;
+  const balanceMoney = balance * cenaKavy;
 
   const countText = document.getElementById("cups-count-text");
   const balanceText = document.getElementById("cups-balance-text");
@@ -589,7 +594,25 @@ if (adminSaveCoffeeBtn) {
   });
 }
 
-// 10. TABULKA UŽIVATELŮ A PLATBY (vč. zobrazení PINů a přidání nového kafaře)
+// Uložení nové ceny kávy z administrace
+const adminSavePriceBtn = document.getElementById("admin-save-price");
+if (adminSavePriceBtn) {
+  adminSavePriceBtn.addEventListener("click", async () => {
+    const newPrice = Number(document.getElementById("admin-coffee-price").value);
+    if (!newPrice || newPrice <= 0) { alert("Zadejte platnou cenu."); return; }
+
+    state.finance.cenaKavy = newPrice;
+
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "saveCoffeePrice", cena: newPrice })
+    });
+
+    alert(`Cena za 1 kávu byla uložena na ${newPrice} Kč.`);
+  });
+}
+
+// 10. TABULKA UŽIVATELŮ A PLATBY
 function renderAdminUsers() {
   const tbody = document.getElementById("admin-user-list");
   const select = document.getElementById("payment-user");
@@ -633,7 +656,6 @@ function renderAdminUsers() {
   });
 }
 
-// Sledování výběru v roletce plateb (zobrazení políček pro nového kafaře)
 const paymentUserSelect = document.getElementById("payment-user");
 if (paymentUserSelect) {
   paymentUserSelect.addEventListener("change", (e) => {
@@ -646,7 +668,6 @@ if (paymentUserSelect) {
   });
 }
 
-// Akce pro uložení nového kafaře
 const adminCreateUserBtn = document.getElementById("admin-create-user-btn");
 if (adminCreateUserBtn) {
   adminCreateUserBtn.addEventListener("click", async () => {
@@ -715,6 +736,7 @@ window.adminSaveUser = async function(id) {
   alert(`Uloženo: ${u.name}`);
 };
 
+// 11. STATISTIKY: TENTO TÝDEN & TENTO MĚSÍC
 function getWorkingDaysInCurrentMonth() {
   const now = new Date();
   const year = now.getFullYear();
