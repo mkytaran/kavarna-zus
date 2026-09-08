@@ -83,6 +83,10 @@ function showMainScreen(user) {
   updateCupsView();
   initRating();
   syncDailyBadge();
+
+  if (user.role === "admin" && localStorage.getItem("zus_current_view") === "admin") {
+    openAdminScreen();
+  }
 }
 
 async function loadData() {
@@ -108,7 +112,6 @@ async function loadData() {
     renderFinance();
     initRating();
 
-    // Nastavení hodnoty do admininputu pro cenu kávy
     const priceInput = document.getElementById("admin-coffee-price");
     if (priceInput && state.finance.cenaKavy) {
       priceInput.value = state.finance.cenaKavy;
@@ -162,6 +165,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   state.todayDrank = 0;
   
   localStorage.removeItem("zus_saved_user");
+  localStorage.removeItem("zus_current_view");
   document.getElementById("login-name").value = "";
   document.getElementById("login-pin").value = "";
   document.getElementById("logout-btn").classList.add("hidden");
@@ -430,26 +434,37 @@ function renderFinance() {
   if (elRoz) elRoz.textContent = `${rozdil} Kč`;
 }
 
+// Přepínání a uchování stavu administrace
 const adminSwitchBtn = document.getElementById("admin-switch-btn");
 if (adminSwitchBtn) {
   adminSwitchBtn.addEventListener("click", () => {
-    document.getElementById("main-view").classList.add("hidden");
-    document.getElementById("bottom-bar").classList.add("hidden");
-    document.getElementById("admin-view").classList.remove("hidden");
-
-    renderAdminCoffeeHistory();
-    renderAdminUsers();
-    renderUsageStats();
+    openAdminScreen();
   });
 }
 
 const adminBackBtn = document.getElementById("admin-back-btn");
 if (adminBackBtn) {
   adminBackBtn.addEventListener("click", () => {
-    document.getElementById("admin-view").classList.add("hidden");
-    document.getElementById("main-view").classList.remove("hidden");
-    document.getElementById("bottom-bar").classList.remove("hidden");
+    closeAdminScreen();
   });
+}
+
+function openAdminScreen() {
+  localStorage.setItem("zus_current_view", "admin");
+  document.getElementById("main-view").classList.add("hidden");
+  document.getElementById("bottom-bar").classList.add("hidden");
+  document.getElementById("admin-view").classList.remove("hidden");
+
+  renderAdminCoffeeHistory();
+  renderAdminUsers();
+  renderUsageStats();
+}
+
+function closeAdminScreen() {
+  localStorage.removeItem("zus_current_view");
+  document.getElementById("admin-view").classList.add("hidden");
+  document.getElementById("main-view").classList.remove("hidden");
+  document.getElementById("bottom-bar").classList.remove("hidden");
 }
 
 function renderAdminCoffeeHistory() {
@@ -594,7 +609,6 @@ if (adminSaveCoffeeBtn) {
   });
 }
 
-// Uložení nové ceny kávy z administrace
 const adminSavePriceBtn = document.getElementById("admin-save-price");
 if (adminSavePriceBtn) {
   adminSavePriceBtn.addEventListener("click", async () => {
@@ -612,7 +626,6 @@ if (adminSavePriceBtn) {
   });
 }
 
-// 10. TABULKA UŽIVATELŮ A PLATBY
 function renderAdminUsers() {
   const tbody = document.getElementById("admin-user-list");
   const select = document.getElementById("payment-user");
@@ -736,7 +749,6 @@ window.adminSaveUser = async function(id) {
   alert(`Uloženo: ${u.name}`);
 };
 
-// 11. STATISTIKY: TENTO TÝDEN & TENTO MĚSÍC
 function getWorkingDaysInCurrentMonth() {
   const now = new Date();
   const year = now.getFullYear();

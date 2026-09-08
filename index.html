@@ -216,57 +216,74 @@
         <div id="coffee-history-list" class="coffee-history-container"></div>
       </div>
 
-      <div class="card">
-        <h3>Nasadit novou kávu do mlýnku</h3>
-        <div class="input-group">
-          <label for="admin-coffee-name">Název kávy & původ</label>
-          <input type="text" id="admin-coffee-name" placeholder="např. Kolumbie Supremo">
-        </div>
-        <div class="input-group">
-          <label for="admin-acidita">Acidita (1–5)</label>
-          <input type="number" id="admin-acidita" min="1" max="5" value="3">
-        </div>
-        <div class="input-group">
-          <label for="admin-intenzita">Intenzita (1–5)</label>
-          <input type="number" id="admin-intenzita" min="1" max="5" value="3">
-        </div>
-        <div class="input-group">
-          <label for="admin-prazeni">Stupeň pražení (1–5)</label>
-          <input type="number" id="admin-prazeni" min="1" max="5" value="3">
-        </div>
-        <button id="admin-save-coffee" class="btn btn-primary">Uložit a nasadit do kávovaru</button>
-      </div>
-
-      <!-- PŘIPSAT PLATBU -->
-      <div class="card">
-        <h3>Připsat novou platbu</h3>
-        <div class="input-group">
-          <label for="payment-user">Kafař</label>
-          <select id="payment-user" class="input-select">
-            <option value="">-- Vyber kafaře --</option>
-            <option value="NEW" style="font-weight: bold; color: var(--accent);">+ Přidat nového kafaře...</option>
-          </select>
-        </div>
-
-        <!-- Dynamické pole pro přidání nového kafaře (ve výchozím stavu skryté) -->
-        <div id="new-user-fields" class="hidden" style="background: var(--bg-app); padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px dashed var(--card-border);">
+      <!-- 1. NASADIT NOVOU KÁVU DO MLÝNKU (ve výchozím stavu sbaleno) -->
+      <details class="card admin-details">
+        <summary>Nasadit novou kávu do mlýnku <span class="dropdown-arrow">▼</span></summary>
+        <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
           <div class="input-group">
-            <label for="new-user-name">Jméno nového kafaře</label>
-            <input type="text" id="new-user-name" placeholder="Např. Jan">
+            <label for="admin-coffee-name">Název kávy & původ</label>
+            <input type="text" id="admin-coffee-name" placeholder="např. Kolumbie Supremo">
           </div>
           <div class="input-group">
-            <label for="new-user-pin">Čtyřmístný PIN</label>
-            <input type="password" id="new-user-pin" inputmode="numeric" maxlength="4" placeholder="1234">
+            <label for="admin-acidita">Acidita (1–5)</label>
+            <input type="number" id="admin-acidita" min="1" max="5" value="3">
           </div>
-          <button id="admin-create-user-btn" class="btn btn-secondary" style="margin-top: 4px;">Uložit nového kafaře</button>
+          <div class="input-group">
+            <label for="admin-intenzita">Intenzita (1–5)</label>
+            <input type="number" id="admin-intenzita" min="1" max="5" value="3">
+          </div>
+          <div class="input-group">
+            <label for="admin-prazeni">Stupeň pražení (1–5)</label>
+            <input type="number" id="admin-prazeni" min="1" max="5" value="3">
+          </div>
+          <button id="admin-save-coffee" class="btn btn-primary">Uložit a nasadit do kávovaru</button>
         </div>
+      </details>
 
-        <div class="input-group">
-          <label for="payment-amount">Zaplacená částka (Kč)</label>
-          <input type="number" id="payment-amount" placeholder="Např. 500">
+      <!-- 2. CENA ZA 1 KÁVU (ve výchozím stavu sbaleno) -->
+      <details class="card admin-details">
+        <summary>Cena za 1 kávu <span class="dropdown-arrow">▼</span></summary>
+        <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
+          <div class="input-group">
+            <label for="admin-coffee-price">Aktuální cena (Kč)</label>
+            <input type="number" id="admin-coffee-price" value="15">
+          </div>
+          <button id="admin-save-price" class="btn btn-primary">Uložit cenu kávy</button>
         </div>
-        <button id="admin-save-payment" class="btn btn-primary">Připsat částku k účtu</button>
-      </div>
+      </details>
+
+      <!-- 3. PŘIPSAT NOVOU PLATBU (ve výchozím stavu sbaleno) -->
+      <details class="card admin-details">
+        <summary>Připsat novou platbu <span class="dropdown-arrow">▼</span></summary>
+        <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
+          <div class="input-group">
+            <label for="payment-user">Kafař</label>
+            <select id="payment-user" class="input-select">
+              <option value="">-- Vyber kafaře --</option>
+              <option value="NEW" style="font-weight: bold; color: var(--accent);">+ Přidat nového kafaře...</option>
+            </select>
+          </div>
+
+          <!-- Pole pro přidání nového kafaře -->
+          <div id="new-user-fields" class="hidden" style="background: var(--bg-app); padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px dashed var(--card-border);">
+            <div class="input-group">
+              <label for="new-user-name">Jméno nového kafaře</label>
+              <input type="text" id="new-user-name" placeholder="Např. Jan">
+            </div>
+            <div class="input-group">
+              <label for="new-user-pin">Čtyřmístný PIN</label>
+              <input type="password" id="new-user-pin" inputmode="numeric" maxlength="4" placeholder="1234">
+            </div>
+            <button id="admin-create-user-btn" class="btn btn-secondary" style="margin-top: 4px;">Uložit nového kafaře</button>
+          </div>
+
+          <div class="input-group">
+            <label for="payment-amount">Zaplacená částka (Kč)</label>
+            <input type="number" id="payment-amount" placeholder="Např. 500">
+          </div>
+          <button id="admin-save-payment" class="btn btn-primary">Připsat částku k účtu</button>
+        </div>
+      </details>
 
       <!-- TENTO TÝDEN -->
       <details class="card admin-details">
@@ -279,16 +296,6 @@
         <summary>Tento měsíc <span class="dropdown-arrow">▼</span></summary>
         <div id="admin-monthly-list" class="stats-list"></div>
       </details>
-
-      <!-- NASTAVENÍ CENY KÁVY -->
-      <div class="card">
-        <h3>Cena za 1 kávu</h3>
-        <div class="input-group">
-          <label for="admin-coffee-price">Aktuální cena (Kč)</label>
-          <input type="number" id="admin-coffee-price" value="15">
-        </div>
-        <button id="admin-save-price" class="btn btn-primary">Uložit cenu kávy</button>
-      </div>
 
       <!-- CELKOVÁ SPRÁVA A PLATBY -->
       <details class="card admin-details">
@@ -313,6 +320,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=3.3"></script>
+  <script src="app.js?v=3.4"></script>
 </body>
 </html>
