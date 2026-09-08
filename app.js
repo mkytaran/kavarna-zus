@@ -26,30 +26,14 @@ let state = {
   logs: []
 };
 
+// Registrace Service Workeru
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW reg failed: ", err));
   });
 }
 
-function restoreCachedCoffeeData() {
-  try {
-    const cachedKava = localStorage.getItem("zus_cached_kava");
-    const cachedRatings = localStorage.getItem("zus_cached_ratings");
-
-    if (cachedKava) {
-      state.kava = JSON.parse(cachedKava);
-      renderCoffeeBadge();
-    }
-    if (cachedRatings) {
-      state.ratings = JSON.parse(cachedRatings);
-      initRating();
-    }
-  } catch (e) {
-    console.warn("Chyba čtení z mezipaměti:", e);
-  }
-}
-
+// 1. PŘIHLÁŠENÍ ZE ZÁLOHY (Spouští se jako první)
 function tryInstantAutoLogin() {
   const savedUser = localStorage.getItem("zus_saved_user");
   if (!savedUser) return;
@@ -84,15 +68,35 @@ function showMainScreen(user) {
   initRating();
   syncDailyBadge();
 
+  // Návrat do administrace po reloadu, pokud v ní administrátor byl
   if (user.role === "admin" && localStorage.getItem("zus_current_view") === "admin") {
     openAdminScreen();
   }
 }
 
-async function loadData() {
-  const syncRow = document.querySelector(".rating-box");
-  if (syncRow) syncRow.classList.add("is-syncing");
+// 2. MEZIPAMĚŤ PRO BLESKOVÝ START (Až po identifikaci uživatele)
+function restoreCachedCoffeeData() {
+  try {
+    const cachedKava = localStorage.getItem("zus_cached_kava");
+    const cachedRatings = localStorage.getItem("zus_cached_ratings");
 
+    if (cachedKava) {
+      state.kava = JSON.parse(cachedKava);
+      renderCoffeeBadge();
+    }
+    if (cachedRatings) {
+      state.ratings = JSON.parse(cachedRatings);
+    }
+    
+    // Okamžité vykreslení srdíček pro přihlášeného kafaře (0 ms prodleva)
+    initRating();
+  } catch (e) {
+    console.warn("Chyba čtení mezipaměti:", e);
+  }
+}
+
+// 3. NAČTENÍ A SYNCHRONIZACE ZE SERVERU NA POZADÍ
+async function loadData() {
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getData`);
     const data = await res.json();
@@ -110,7 +114,7 @@ async function loadData() {
 
     renderCoffeeBadge();
     renderFinance();
-    initRating();
+    initRating(); // Obnovení po stažení dat
 
     const priceInput = document.getElementById("admin-coffee-price");
     if (priceInput && state.finance.cenaKavy) {
@@ -127,15 +131,23 @@ async function loadData() {
         state.currentUser = freshUser;
         localStorage.setItem("zus_saved_user", JSON.stringify(freshUser));
         updateCupsView();
+        initRating(); // Znovu potvrdit srdíčka pro čerstvého uživatele
       }
+    }
+
+    // Pokud je otevřená administrace, překreslit data ihned po stažení
+    const adminView = document.getElementById("admin-view");
+    if (adminView && !adminView.classList.contains("hidden")) {
+      renderAdminUsers();
+      renderUsageStats();
+      renderAdminCoffeeHistory();
     }
   } catch (err) {
     console.error("Chyba při synchronizaci:", err);
-  } finally {
-    if (syncRow) syncRow.classList.remove("is-syncing");
   }
 }
 
+// PŘIHLAŠOVÁNÍ A ODHLAŠOVÁNÍ
 document.getElementById("login-btn").addEventListener("click", () => {
   const name = document.getElementById("login-name").value.trim();
   const pin = document.getElementById("login-pin").value.trim();
@@ -178,6 +190,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   renderDailyBadge(); 
 });
 
+// 4. KÁVOVÝ ŠTÍTEK
 function renderBeansMeter(containerId, value) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -196,15 +209,26 @@ function renderCoffeeBadge() {
   renderBeansMeter("beans-prazeni", state.kava.prazeni || 3);
 }
 
+// 5. BLESKOVÉ HODNOCENÍ SRDÍČKY
 function initRating() {
   const hearts = document.querySelectorAll("#hearts-container .heart-btn");
   let myRating = 0;
 
   if (state.currentUser && state.kava) {
-    const found = state.ratings.find(
-      r => String(r.kavaId) === String(state.kava.id) && String(r.userId) === String(state.currentUser.id)
-    );
-    if (found) myRating = found.rating;
+    // 1. Okamžitý direct-cache klíč pro uživatele a konkrétní kávu
+    const directCache = localStorage.getItem(`zus_my_rating_${state.kava.id}_${state.currentUser.id}`);
+    if (directCache !== null) {
+      myRating = Number(directCache);
+    } else {
+      // 2. Fallback na pole ze synchronizace
+      const found = state.ratings.find(
+        r => String(r.kavaId) === String(state.kava.id) && String(r.userId) === String(state.currentUser.id)
+      );
+      if (found) {
+        myRating = found.rating;
+        localStorage.setItem(`zus_my_rating_${state.kava.id}_${state.currentUser.id}`, myRating);
+      }
+    }
   }
 
   paintHearts(myRating);
@@ -214,7 +238,9 @@ function initRating() {
       const val = Number(btn.getAttribute("data-val"));
       if (!state.currentUser || !state.kava) return;
 
+      // Okamžitá vizuální odezva a uložení do telefonu
       paintHearts(val);
+      localStorage.setItem(`zus_my_rating_${state.kava.id}_${state.currentUser.id}`, val);
 
       const existing = state.ratings.find(
         r => String(r.kavaId) === String(state.kava.id) && String(r.userId) === String(state.currentUser.id)
@@ -232,6 +258,7 @@ function initRating() {
 
       localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
 
+      // Tiché uložení na server na pozadí
       try {
         await fetch(SCRIPT_URL, {
           method: "POST",
@@ -262,6 +289,7 @@ function paintHearts(val) {
   });
 }
 
+// 6. DENNÍ ODZNÁČEK NA ŠÁLKU
 function syncDailyBadge() {
   if (!state.currentUser) return;
   const uId = state.currentUser.id;
@@ -303,6 +331,7 @@ function renderDailyBadge() {
   }
 }
 
+// 7. ODKLIKÁVÁNÍ KÁVY (Optimistické UI bez zdržování)
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
 
@@ -358,6 +387,7 @@ async function syncDrankToServer(userId, drank) {
   }
 }
 
+// 8. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ & ZOBRAZENÍ DLUHU V KČ
 function updateCupsView() {
   const u = state.currentUser;
   if (!u) return;
@@ -420,6 +450,7 @@ function updateCupsView() {
   }
 }
 
+// 9. STAV POKLADNY
 function renderFinance() {
   const vybrano = state.finance.vybrano || 0;
   const naklady = (state.finance.naklady || 0) + (state.finance.doprava || 0);
@@ -434,7 +465,7 @@ function renderFinance() {
   if (elRoz) elRoz.textContent = `${rozdil} Kč`;
 }
 
-// Přepínání a uchování stavu administrace
+// 10. ADMINISTRACE - PŘEPÍNÁNÍ A ZACHOVÁNÍ STAVU
 const adminSwitchBtn = document.getElementById("admin-switch-btn");
 if (adminSwitchBtn) {
   adminSwitchBtn.addEventListener("click", () => {
@@ -749,6 +780,7 @@ window.adminSaveUser = async function(id) {
   alert(`Uloženo: ${u.name}`);
 };
 
+// 11. STATISTIKY V ADMINISTRACI
 function getWorkingDaysInCurrentMonth() {
   const now = new Date();
   const year = now.getFullYear();
@@ -837,7 +869,17 @@ function renderUsageStats() {
   });
 }
 
-// Start aplikace
-restoreCachedCoffeeData();
+// Osvěžení dat při rozbalení kterékoliv karty v administraci
+document.querySelectorAll(".admin-details").forEach(detail => {
+  detail.addEventListener("toggle", () => {
+    if (detail.open) {
+      renderUsageStats();
+      renderAdminUsers();
+    }
+  });
+});
+
+// START APLIKACE (Přísně seřazeno: 1. Uživatel -> 2. Lokální data a srdíčka -> 3. Síť)
 tryInstantAutoLogin();
+restoreCachedCoffeeData();
 loadData();
