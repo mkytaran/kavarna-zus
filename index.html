@@ -242,8 +242,25 @@
         <h3>Připsat novou platbu</h3>
         <div class="input-group">
           <label for="payment-user">Kafař</label>
-          <select id="payment-user" class="input-select"></select>
+          <select id="payment-user" class="input-select">
+            <option value="">-- Vyber kafaře --</option>
+            <option value="NEW" style="font-weight: bold; color: var(--accent);">+ Přidat nového kafaře...</option>
+          </select>
         </div>
+
+        <!-- Dynamické pole pro přidání nového kafaře (ve výchozím stavu skryté) -->
+        <div id="new-user-fields" class="hidden" style="background: var(--bg-app); padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px dashed var(--card-border);">
+          <div class="input-group">
+            <label for="new-user-name">Jméno nového kafaře</label>
+            <input type="text" id="new-user-name" placeholder="Např. Jan">
+          </div>
+          <div class="input-group">
+            <label for="new-user-pin">Čtyřmístný PIN</label>
+            <input type="password" id="new-user-pin" inputmode="numeric" maxlength="4" placeholder="1234">
+          </div>
+          <button id="admin-create-user-btn" class="btn btn-secondary" style="margin-top: 4px;">Uložit nového kafaře</button>
+        </div>
+
         <div class="input-group">
           <label for="payment-amount">Zaplacená částka (Kč)</label>
           <input type="number" id="payment-amount" placeholder="Např. 500">
@@ -286,6 +303,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=3.0"></script>
+  <script src="app.js?v=3.1"></script>
 </body>
 </html>

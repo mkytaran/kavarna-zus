@@ -1,8 +1,7 @@
 // URL vašeho Google Apps Script Web App
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
 
-// --- NASTAVENÍ CENY KÁVY PRO VÝPOČET DLUHU ---
-const CENA_KAVY = 10; // Změňte podle reálné ceny v kavárně v Kč
+const CENA_KAVY = 10;
 
 function createBeanSVG(isActive) {
   return `
@@ -35,7 +34,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// 1. MEZIPAMĚŤ PRO OKAMŽITÉ ZOBRAZENÍ
 function restoreCachedCoffeeData() {
   try {
     const cachedKava = localStorage.getItem("zus_cached_kava");
@@ -54,7 +52,6 @@ function restoreCachedCoffeeData() {
   }
 }
 
-// 2. PŘIHLÁŠENÍ A ZOBRAZENÍ
 function tryInstantAutoLogin() {
   const savedUser = localStorage.getItem("zus_saved_user");
   if (!savedUser) return;
@@ -90,7 +87,6 @@ function showMainScreen(user) {
   syncDailyBadge();
 }
 
-// 3. NAČTENÍ DAT ZE SERVERU
 async function loadData() {
   const syncRow = document.querySelector(".rating-box");
   if (syncRow) syncRow.classList.add("is-syncing");
@@ -174,7 +170,6 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   renderDailyBadge(); 
 });
 
-// 4. KÁVOVÝ ŠTÍTEK
 function renderBeansMeter(containerId, value) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -193,7 +188,6 @@ function renderCoffeeBadge() {
   renderBeansMeter("beans-prazeni", state.kava.prazeni || 3);
 }
 
-// 5. HODNOCENÍ SRDÍČKY
 function initRating() {
   const hearts = document.querySelectorAll("#hearts-container .heart-btn");
   let myRating = 0;
@@ -260,7 +254,6 @@ function paintHearts(val) {
   });
 }
 
-// --- LOGIKA DENNÍHO ODZNÁČKU ---
 function syncDailyBadge() {
   if (!state.currentUser) return;
   const uId = state.currentUser.id;
@@ -302,7 +295,6 @@ function renderDailyBadge() {
   }
 }
 
-// 6. ODKLIKÁVÁNÍ KÁVY (s povolením na dluh)
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
 
@@ -358,7 +350,6 @@ async function syncDrankToServer(userId, drank) {
   }
 }
 
-// 7. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ PŘEDPLATNÉHO (s dluhem)
 function updateCupsView() {
   const u = state.currentUser;
   if (!u) return;
@@ -394,7 +385,6 @@ function updateCupsView() {
     </svg>
   `;
 
-  // Vykreslíme tolik kalíšků, kolik je buď předplaceno, nebo vypito (podle toho, co je větší)
   const gridCount = Math.max(totalCups, drankCups);
 
   for (let i = 1; i <= gridCount; i++) {
@@ -409,7 +399,6 @@ function updateCupsView() {
         div.classList.add("empty");
       }
     } else {
-      // Jsme za hranicí předplaceného, takže je to dluh
       div.classList.add("debt");
     }
     
@@ -422,7 +411,6 @@ function updateCupsView() {
   }
 }
 
-// 8. POKLADNA
 function renderFinance() {
   const vybrano = state.finance.vybrano || 0;
   const naklady = (state.finance.naklady || 0) + (state.finance.doprava || 0);
@@ -437,7 +425,6 @@ function renderFinance() {
   if (elRoz) elRoz.textContent = `${rozdil} Kč`;
 }
 
-// 9. ADMIN KARTOTÉKA KÁV A SPRÁVA
 const adminSwitchBtn = document.getElementById("admin-switch-btn");
 if (adminSwitchBtn) {
   adminSwitchBtn.addEventListener("click", () => {
@@ -602,16 +589,23 @@ if (adminSaveCoffeeBtn) {
   });
 }
 
-// 10. TABULKA UŽIVATELŮ A PLATBY
+// 10. TABULKA UŽIVATELŮ A PLATBY (vč. přidání nového kafaře)
 function renderAdminUsers() {
   const tbody = document.getElementById("admin-user-list");
   const select = document.getElementById("payment-user");
   
   if (tbody) tbody.innerHTML = "";
-  if (select) select.innerHTML = '<option value="">-- Vyber kafaře --</option>';
+  if (select) {
+    select.innerHTML = '<option value="">-- Vyber kafaře --</option><option value="NEW" style="font-weight: bold; color: var(--accent);">+ Přidat nového kafaře...</option>';
+  }
 
   state.users.forEach(u => {
-    if (select) select.innerHTML += `<option value="${u.id}">${u.name}</option>`;
+    if (select) {
+      const option = document.createElement("option");
+      option.value = u.id;
+      option.textContent = u.name;
+      select.appendChild(option);
+    }
 
     if (tbody) {
       const balance = Number(u.prepaid) - Number(u.drank);
@@ -639,12 +633,53 @@ function renderAdminUsers() {
   });
 }
 
+// Sledování výběru v roletce plateb (zobrazení políček pro nového kafaře)
+const paymentUserSelect = document.getElementById("payment-user");
+if (paymentUserSelect) {
+  paymentUserSelect.addEventListener("change", (e) => {
+    const newUserFields = document.getElementById("new-user-fields");
+    if (e.target.value === "NEW") {
+      newUserFields.classList.remove("hidden");
+    } else {
+      newUserFields.classList.add("hidden");
+    }
+  });
+}
+
+// Akce pro uložení nového kafaře
+const adminCreateUserBtn = document.getElementById("admin-create-user-btn");
+if (adminCreateUserBtn) {
+  adminCreateUserBtn.addEventListener("click", async () => {
+    const name = document.getElementById("new-user-name").value.trim();
+    const pin = document.getElementById("new-user-pin").value.trim();
+
+    if (!name || !pin || pin.length !== 4) {
+      alert("Zadejte prosím platné jméno a čtyřmístný PIN.");
+      return;
+    }
+
+    document.getElementById("new-user-name").value = "";
+    document.getElementById("new-user-pin").value = "";
+    document.getElementById("new-user-fields").classList.add("hidden");
+
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "addUser", name: name, pin: pin })
+    });
+
+    await loadData();
+    renderAdminUsers();
+    renderUsageStats();
+    alert(`Nový kafař "${name}" byl úspěšně přidán!`);
+  });
+}
+
 const adminSavePaymentBtn = document.getElementById("admin-save-payment");
 if (adminSavePaymentBtn) {
   adminSavePaymentBtn.addEventListener("click", async () => {
     const userId = document.getElementById("payment-user").value;
     const amount = document.getElementById("payment-amount").value;
-    if (!userId || !amount) { alert("Vyplň kafaře i částku."); return; }
+    if (!userId || userId === "NEW" || !amount) { alert("Vyplň platného kafaře i částku."); return; }
 
     const u = state.users.find(x => String(x.id) === userId);
     if (!u) return;
@@ -680,7 +715,6 @@ window.adminSaveUser = async function(id) {
   alert(`Uloženo: ${u.name}`);
 };
 
-// 11. STATISTIKY: TENTO TÝDEN & TENTO MĚSÍC
 function getWorkingDaysInCurrentMonth() {
   const now = new Date();
   const year = now.getFullYear();
