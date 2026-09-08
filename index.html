@@ -11,15 +11,19 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <title>ZUŠkafe</title>
   <link rel="manifest" href="manifest.json?v=1.1">
-  <link rel="stylesheet" href="style.css?v=2.3">
+  <link rel="stylesheet" href="style.css?v=2.4">
 </head>
 <body>
   <div class="app-container">
     
-    <!-- Horní lišta -->
+   <!-- Horní lišta s navigací pro admina -->
     <div class="top-bar">
       <span class="app-title">☕ ZUŠkafe</span>
       <div class="top-bar-right">
+        <!-- Tlačítko pro vstup do administrace (vidí jen admin) -->
+        <button id="admin-switch-btn" class="link-btn admin-nav-btn hidden">⚙️ Správa</button>
+        <!-- Tlačítko pro návrat z administrace zpět (vidí jen admin uvnitř správy) -->
+        <button id="admin-back-btn" class="link-btn admin-nav-btn hidden">← Zpět</button>
         <button id="logout-btn" class="link-btn hidden">Odhlásit</button>
       </div>
     </div>
@@ -199,14 +203,6 @@
 
     </section>
 
-    <!-- DOLNÍ LIŠTA PRO ADMIN -->
-    <nav id="bottom-bar" class="bottom-bar hidden">
-      <button id="admin-switch-btn" class="bottom-bar-btn hidden">
-        <span class="icon">⚙️</span>
-        <span>Správa kavárny</span>
-      </button>
-    </nav>
-
     <!-- ADMIN PANEL -->
     <section id="admin-view" class="hidden content-with-bottom-bar">
       <h2>Administrace</h2>
@@ -315,11 +311,9 @@
           </table>
         </div>
       </details>
-
-      <button id="admin-back-btn" class="btn btn-secondary">Zpět na přehled</button>
     </section>
 
   </div>
-  <script src="app.js?v=3.5"></script>
+  <script src="app.js?v=3.6"></script>
 </body>
 </html>

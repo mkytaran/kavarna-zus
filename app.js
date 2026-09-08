@@ -51,24 +51,26 @@ function tryInstantAutoLogin() {
 function showMainScreen(user) {
   document.getElementById("login-view").classList.add("hidden");
   document.getElementById("main-view").classList.remove("hidden");
+  document.getElementById("admin-view").classList.add("hidden");
   document.getElementById("logout-btn").classList.remove("hidden");
 
-  const bottomBar = document.getElementById("bottom-bar");
   const adminBtn = document.getElementById("admin-switch-btn");
+  const backBtn = document.getElementById("admin-back-btn");
 
+  // Pokud je uživatel admin, nabídneme mu nahoře tlačítko "⚙️ Správa"
   if (user.role === "admin") {
-    bottomBar.classList.remove("hidden");
     adminBtn.classList.remove("hidden");
+    backBtn.classList.add("hidden");
   } else {
-    bottomBar.classList.add("hidden");
     adminBtn.classList.add("hidden");
+    backBtn.classList.add("hidden");
   }
 
   updateCupsView();
   initRating();
   syncDailyBadge();
 
-  // Návrat do administrace po reloadu, pokud v ní administrátor byl
+  // Návrat do administrace po reloadu, pokud v ní byl předtím
   if (user.role === "admin" && localStorage.getItem("zus_current_view") === "admin") {
     openAdminScreen();
   }
@@ -483,8 +485,11 @@ if (adminBackBtn) {
 function openAdminScreen() {
   localStorage.setItem("zus_current_view", "admin");
   document.getElementById("main-view").classList.add("hidden");
-  document.getElementById("bottom-bar").classList.add("hidden");
   document.getElementById("admin-view").classList.remove("hidden");
+
+  // V liště schováme "Správa" a ukážeme "← Zpět"
+  document.getElementById("admin-switch-btn").classList.add("hidden");
+  document.getElementById("admin-back-btn").classList.remove("hidden");
 
   renderAdminCoffeeHistory();
   renderAdminUsers();
@@ -495,8 +500,32 @@ function closeAdminScreen() {
   localStorage.removeItem("zus_current_view");
   document.getElementById("admin-view").classList.add("hidden");
   document.getElementById("main-view").classList.remove("hidden");
-  document.getElementById("bottom-bar").classList.remove("hidden");
+
+  // V liště schováme "← Zpět" a vrátíme "⚙️ Správa"
+  document.getElementById("admin-back-btn").classList.add("hidden");
+  document.getElementById("admin-switch-btn").classList.remove("hidden");
 }
+
+// Při odhlášení schováme obě admin tlačítka
+document.getElementById("logout-btn").addEventListener("click", () => {
+  state.currentUser = null;
+  state.clicksInSession = 0;
+  state.todayDrank = 0;
+  
+  localStorage.removeItem("zus_saved_user");
+  localStorage.removeItem("zus_current_view");
+  document.getElementById("login-name").value = "";
+  document.getElementById("login-pin").value = "";
+  document.getElementById("logout-btn").classList.add("hidden");
+  document.getElementById("admin-switch-btn").classList.add("hidden");
+  document.getElementById("admin-back-btn").classList.add("hidden");
+  document.getElementById("undo-btn").classList.add("hidden");
+  document.getElementById("main-view").classList.add("hidden");
+  document.getElementById("admin-view").classList.add("hidden");
+  document.getElementById("login-view").classList.remove("hidden");
+  
+  renderDailyBadge(); 
+});
 
 function renderAdminCoffeeHistory() {
   const container = document.getElementById("coffee-history-list");

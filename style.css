@@ -91,7 +91,24 @@ body {
 .top-bar-right {
   display: flex;
   align-items: center;
+  gap: 12px; /* Elegantní rozestup mezi tlačítky nahoře */
 }
+
+.admin-nav-btn {
+  color: var(--primary) !important;
+  font-weight: 800;
+  text-decoration: none !important;
+  background: var(--treasury-bg);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  transition: opacity 0.2s;
+}
+
+.admin-nav-btn:hover {
+  opacity: 0.85;
+}
+
 .app-title {
   font-weight: 800;
   font-size: 1.25rem;
