@@ -589,7 +589,7 @@ if (adminSaveCoffeeBtn) {
   });
 }
 
-// 10. TABULKA UŽIVATELŮ A PLATBY (vč. přidání nového kafaře)
+// 10. TABULKA UŽIVATELŮ A PLATBY (vč. zobrazení PINů a přidání nového kafaře)
 function renderAdminUsers() {
   const tbody = document.getElementById("admin-user-list");
   const select = document.getElementById("payment-user");
@@ -615,7 +615,7 @@ function renderAdminUsers() {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td style="font-weight:700;">
-          ${u.name}<br>
+          ${u.name} <span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">(PIN: ${u.pin})</span><br>
           <span style="font-size:0.75rem; color:${statusColor}; font-weight:800;">
             Zůstatek: ${balance}
           </span>
