@@ -71,7 +71,7 @@ function showMainScreen(user) {
   initRating();
   syncDailyBadge();
 
-  // Návrat do administrace, pokud tam byl před reloadem
+  // Návrat do administrace po reloadu, pokud v ní administrátor byl
   if (user.role === "admin" && localStorage.getItem("zus_current_view") === "admin") {
     openAdminScreen();
   }
@@ -97,7 +97,7 @@ function restoreCachedCoffeeData() {
   }
 }
 
-// 3. TICHÉ STAŽENÍ ČERSTVÝCH DAT ZE SERVERU
+// 3. TICHÉ STAŽENÍ ČERSTVÝCH DAT ZE SERVERU A SYNCHRONIZACE ODZNÁČKU
 async function loadData() {
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getData`);
@@ -135,6 +135,20 @@ async function loadData() {
         updateCupsView();
         initRating();
       }
+    }
+
+    // PŘEPOČET DENNÍHO ODZNÁČKU ZE SERVEROVÝCH LOGŮ (Autorita tabulky)
+    if (state.currentUser && state.logs && state.logs.length > 0) {
+      const todayMidnight = new Date();
+      todayMidnight.setHours(0, 0, 0, 0);
+
+      const serverToday = state.logs
+        .filter(l => String(l.userId) === String(state.currentUser.id) && new Date(l.date) >= todayMidnight)
+        .reduce((sum, l) => sum + Number(l.diff || 0), 0);
+
+      state.todayDrank = Math.max(0, serverToday);
+      saveDailyBadge();
+      checkUndoAvailability();
     }
 
     const adminView = document.getElementById("admin-view");
@@ -340,7 +354,7 @@ function checkUndoAvailability() {
   const undoBtn = document.getElementById("undo-btn");
   if (!undoBtn) return;
 
-  // Pravidlo: vrátit lze POUZE překlik z více káv na 1 (nikdy ne na 0) a pouze v aktivním okně
+  // Lze vrátit POUZE z 2+ káv na 1 (nikdy na nulu) a v aktivním okně
   if (state.todayDrank > 1 && state.clicksInSession > 0) {
     undoBtn.classList.remove("hidden");
   } else {
@@ -354,7 +368,7 @@ function triggerUndoTimer() {
 
   checkUndoAvailability();
 
-  // Po 120 sekundách (2 minuty) možnost opravy překliku definitivně vyprší
+  // Po 120 sekundách (2 minuty) možnost opravy vyprší
   undoTimeout = setTimeout(() => {
     state.clicksInSession = 0;
     checkUndoAvailability();
@@ -375,7 +389,7 @@ if (cupAction) {
     state.todayDrank += 1;
     u.totalDrank = (Number(u.totalDrank) || 0) + 1;
 
-    // Lokální záznam do logu pro okamžité promítnutí do statistik
+    // Lokální optimistický záznam do logu pro okamžité promítnutí do statistik
     state.logs.push({
       date: new Date().toISOString(),
       userId: u.id,
@@ -822,6 +836,13 @@ window.adminSaveUser = async function(id) {
   const u = state.users.find(x => String(x.id) === String(id));
   if (!u) return;
 
+  // Pokud admin upravuje sám sebe, okamžitě zohledníme rozdíl i v denním odznáčku
+  if (state.currentUser && String(state.currentUser.id) === String(id)) {
+    const diff = drk - Number(u.drank);
+    state.todayDrank = Math.max(0, state.todayDrank + diff);
+    saveDailyBadge();
+  }
+
   await fetch(SCRIPT_URL, {
     method: "POST",
     body: JSON.stringify({ action: "adminUpdate", id: id, prepaid: prep, drank: drk, totalPaid: tPaid })
@@ -931,7 +952,7 @@ document.querySelectorAll(".admin-details").forEach(detail => {
   });
 });
 
-// START APLIKACE (1. Uživatel -> 2. Mezipaměť s nulovou prodlevou -> 3. Pozadí sítě)
+// START APLIKACE (1. Uživatel -> 2. Mezipaměť a srdíčka ihned -> 3. Tiché stažení ze serveru)
 tryInstantAutoLogin();
 restoreCachedCoffeeData();
 loadData();
