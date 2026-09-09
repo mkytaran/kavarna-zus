@@ -26,6 +26,8 @@ let state = {
   logs: []
 };
 
+let undoTimeout = null;
+
 // Registrace Service Workeru
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -33,7 +35,7 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// 1. PŘIHLÁŠENÍ ZE ZÁLOHY (Spouští se jako první)
+// 1. PŘIHLÁŠENÍ ZE ZÁLOHY (Okamžitý start)
 function tryInstantAutoLogin() {
   const savedUser = localStorage.getItem("zus_saved_user");
   if (!savedUser) return;
@@ -57,26 +59,25 @@ function showMainScreen(user) {
   const adminBtn = document.getElementById("admin-switch-btn");
   const backBtn = document.getElementById("admin-back-btn");
 
-  // Pokud je uživatel admin, nabídneme mu nahoře tlačítko "⚙️ Správa"
   if (user.role === "admin") {
-    adminBtn.classList.remove("hidden");
-    backBtn.classList.add("hidden");
+    if (adminBtn) adminBtn.classList.remove("hidden");
+    if (backBtn) backBtn.classList.add("hidden");
   } else {
-    adminBtn.classList.add("hidden");
-    backBtn.classList.add("hidden");
+    if (adminBtn) adminBtn.classList.add("hidden");
+    if (backBtn) backBtn.classList.add("hidden");
   }
 
   updateCupsView();
   initRating();
   syncDailyBadge();
 
-  // Návrat do administrace po reloadu, pokud v ní byl předtím
+  // Návrat do administrace, pokud tam byl před reloadem
   if (user.role === "admin" && localStorage.getItem("zus_current_view") === "admin") {
     openAdminScreen();
   }
 }
 
-// 2. MEZIPAMĚŤ PRO BLESKOVÝ START (Až po identifikaci uživatele)
+// 2. OBNOVENÍ MEZIPAMĚTI PRO BLESKOVÝ VZHLED
 function restoreCachedCoffeeData() {
   try {
     const cachedKava = localStorage.getItem("zus_cached_kava");
@@ -90,14 +91,13 @@ function restoreCachedCoffeeData() {
       state.ratings = JSON.parse(cachedRatings);
     }
     
-    // Okamžité vykreslení srdíček pro přihlášeného kafaře (0 ms prodleva)
-    initRating();
+    initRating(); // Vykreslí srdíčka ihned bez prodlevy
   } catch (e) {
     console.warn("Chyba čtení mezipaměti:", e);
   }
 }
 
-// 3. NAČTENÍ A SYNCHRONIZACE ZE SERVERU NA POZADÍ
+// 3. TICHÉ STAŽENÍ ČERSTVÝCH DAT ZE SERVERU
 async function loadData() {
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getData`);
@@ -116,7 +116,7 @@ async function loadData() {
 
     renderCoffeeBadge();
     renderFinance();
-    initRating(); // Obnovení po stažení dat
+    initRating();
 
     const priceInput = document.getElementById("admin-coffee-price");
     if (priceInput && state.finance.cenaKavy) {
@@ -133,11 +133,10 @@ async function loadData() {
         state.currentUser = freshUser;
         localStorage.setItem("zus_saved_user", JSON.stringify(freshUser));
         updateCupsView();
-        initRating(); // Znovu potvrdit srdíčka pro čerstvého uživatele
+        initRating();
       }
     }
 
-    // Pokud je otevřená administrace, překreslit data ihned po stažení
     const adminView = document.getElementById("admin-view");
     if (adminView && !adminView.classList.contains("hidden")) {
       renderAdminUsers();
@@ -177,13 +176,19 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   state.currentUser = null;
   state.clicksInSession = 0;
   state.todayDrank = 0;
+  if (undoTimeout) clearTimeout(undoTimeout);
   
   localStorage.removeItem("zus_saved_user");
   localStorage.removeItem("zus_current_view");
   document.getElementById("login-name").value = "";
   document.getElementById("login-pin").value = "";
   document.getElementById("logout-btn").classList.add("hidden");
-  document.getElementById("bottom-bar").classList.add("hidden");
+  
+  const adminBtn = document.getElementById("admin-switch-btn");
+  const backBtn = document.getElementById("admin-back-btn");
+  if (adminBtn) adminBtn.classList.add("hidden");
+  if (backBtn) backBtn.classList.add("hidden");
+
   document.getElementById("undo-btn").classList.add("hidden");
   document.getElementById("main-view").classList.add("hidden");
   document.getElementById("admin-view").classList.add("hidden");
@@ -217,12 +222,10 @@ function initRating() {
   let myRating = 0;
 
   if (state.currentUser && state.kava) {
-    // 1. Okamžitý direct-cache klíč pro uživatele a konkrétní kávu
     const directCache = localStorage.getItem(`zus_my_rating_${state.kava.id}_${state.currentUser.id}`);
     if (directCache !== null) {
       myRating = Number(directCache);
     } else {
-      // 2. Fallback na pole ze synchronizace
       const found = state.ratings.find(
         r => String(r.kavaId) === String(state.kava.id) && String(r.userId) === String(state.currentUser.id)
       );
@@ -240,7 +243,6 @@ function initRating() {
       const val = Number(btn.getAttribute("data-val"));
       if (!state.currentUser || !state.kava) return;
 
-      // Okamžitá vizuální odezva a uložení do telefonu
       paintHearts(val);
       localStorage.setItem(`zus_my_rating_${state.kava.id}_${state.currentUser.id}`, val);
 
@@ -260,7 +262,6 @@ function initRating() {
 
       localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
 
-      // Tiché uložení na server na pozadí
       try {
         await fetch(SCRIPT_URL, {
           method: "POST",
@@ -311,6 +312,7 @@ function syncDailyBadge() {
     state.todayDrank = 0;
   }
   renderDailyBadge();
+  checkUndoAvailability();
 }
 
 function saveDailyBadge() {
@@ -333,7 +335,33 @@ function renderDailyBadge() {
   }
 }
 
-// 7. ODKLIKÁVÁNÍ KÁVY (Optimistické UI bez zdržování)
+// 7. BEZPEČNÁ KONTROLA A ČASOVAČ PRO VRÁCENÍ OMYLU
+function checkUndoAvailability() {
+  const undoBtn = document.getElementById("undo-btn");
+  if (!undoBtn) return;
+
+  // Pravidlo: vrátit lze POUZE překlik z více káv na 1 (nikdy ne na 0) a pouze v aktivním okně
+  if (state.todayDrank > 1 && state.clicksInSession > 0) {
+    undoBtn.classList.remove("hidden");
+  } else {
+    undoBtn.classList.add("hidden");
+    if (undoTimeout) clearTimeout(undoTimeout);
+  }
+}
+
+function triggerUndoTimer() {
+  if (undoTimeout) clearTimeout(undoTimeout);
+
+  checkUndoAvailability();
+
+  // Po 120 sekundách (2 minuty) možnost opravy překliku definitivně vyprší
+  undoTimeout = setTimeout(() => {
+    state.clicksInSession = 0;
+    checkUndoAvailability();
+  }, 120000);
+}
+
+// 8. ODKLIKÁVÁNÍ KÁVY (pro sebe, kamaráda i na dluh)
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
 
@@ -345,36 +373,47 @@ if (cupAction) {
     u.drank += 1;
     state.clicksInSession += 1;
     state.todayDrank += 1;
-    
+    u.totalDrank = (Number(u.totalDrank) || 0) + 1;
+
+    // Lokální záznam do logu pro okamžité promítnutí do statistik
+    state.logs.push({
+      date: new Date().toISOString(),
+      userId: u.id,
+      diff: 1
+    });
+
     saveDailyBadge(); 
     updateCupsView();
+    triggerUndoTimer();
     syncDrankToServer(u.id, u.drank);
-
-    if (state.clicksInSession > 0 && undoBtn) {
-      undoBtn.classList.remove("hidden");
-    }
   });
 }
 
+// 9. VRÁCENÍ OMYLU (stornování překliku)
 if (undoBtn) {
-  undoBtn.addEventListener("click", () => {
+  undoBtn.addEventListener("click", async () => {
     const u = state.currentUser;
-    if (state.clicksInSession > 0) {
-      u.drank -= 1;
-      state.clicksInSession -= 1;
-      
-      if (state.todayDrank > 0) {
-        state.todayDrank -= 1;
-        saveDailyBadge();
-      }
+    if (!u || state.todayDrank <= 1 || state.clicksInSession <= 0) return;
 
-      updateCupsView();
-      syncDrankToServer(u.id, u.drank);
+    u.drank -= 1;
+    state.clicksInSession -= 1;
+    state.todayDrank -= 1;
+    u.totalDrank = Math.max(0, (Number(u.totalDrank) || 0) - 1);
 
-      if (state.clicksInSession === 0) {
-        undoBtn.classList.add("hidden");
-      }
-    }
+    // Záznam stornování do lokálního logu
+    state.logs.push({
+      date: new Date().toISOString(),
+      userId: u.id,
+      diff: -1
+    });
+
+    saveDailyBadge();
+    updateCupsView();
+    checkUndoAvailability();
+
+    await syncDrankToServer(u.id, u.drank);
+    await loadData();
+    renderUsageStats();
   });
 }
 
@@ -389,7 +428,7 @@ async function syncDrankToServer(userId, drank) {
   }
 }
 
-// 8. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ & ZOBRAZENÍ DLUHU V KČ
+// 10. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ & ZOBRAZENÍ DLUHU V KČ
 function updateCupsView() {
   const u = state.currentUser;
   if (!u) return;
@@ -452,7 +491,7 @@ function updateCupsView() {
   }
 }
 
-// 9. STAV POKLADNY
+// 11. POKLADNA
 function renderFinance() {
   const vybrano = state.finance.vybrano || 0;
   const naklady = (state.finance.naklady || 0) + (state.finance.doprava || 0);
@@ -467,7 +506,7 @@ function renderFinance() {
   if (elRoz) elRoz.textContent = `${rozdil} Kč`;
 }
 
-// 10. ADMINISTRACE - PŘEPÍNÁNÍ A ZACHOVÁNÍ STAVU
+// 12. PŘEPÍNAČ ADMINISTRACE V HORNÍ LIŠTĚ
 const adminSwitchBtn = document.getElementById("admin-switch-btn");
 if (adminSwitchBtn) {
   adminSwitchBtn.addEventListener("click", () => {
@@ -487,9 +526,10 @@ function openAdminScreen() {
   document.getElementById("main-view").classList.add("hidden");
   document.getElementById("admin-view").classList.remove("hidden");
 
-  // V liště schováme "Správa" a ukážeme "← Zpět"
-  document.getElementById("admin-switch-btn").classList.add("hidden");
-  document.getElementById("admin-back-btn").classList.remove("hidden");
+  const adminBtn = document.getElementById("admin-switch-btn");
+  const backBtn = document.getElementById("admin-back-btn");
+  if (adminBtn) adminBtn.classList.add("hidden");
+  if (backBtn) backBtn.classList.remove("hidden");
 
   renderAdminCoffeeHistory();
   renderAdminUsers();
@@ -501,32 +541,13 @@ function closeAdminScreen() {
   document.getElementById("admin-view").classList.add("hidden");
   document.getElementById("main-view").classList.remove("hidden");
 
-  // V liště schováme "← Zpět" a vrátíme "⚙️ Správa"
-  document.getElementById("admin-back-btn").classList.add("hidden");
-  document.getElementById("admin-switch-btn").classList.remove("hidden");
+  const adminBtn = document.getElementById("admin-switch-btn");
+  const backBtn = document.getElementById("admin-back-btn");
+  if (backBtn) backBtn.classList.add("hidden");
+  if (adminBtn) adminBtn.classList.remove("hidden");
 }
 
-// Při odhlášení schováme obě admin tlačítka
-document.getElementById("logout-btn").addEventListener("click", () => {
-  state.currentUser = null;
-  state.clicksInSession = 0;
-  state.todayDrank = 0;
-  
-  localStorage.removeItem("zus_saved_user");
-  localStorage.removeItem("zus_current_view");
-  document.getElementById("login-name").value = "";
-  document.getElementById("login-pin").value = "";
-  document.getElementById("logout-btn").classList.add("hidden");
-  document.getElementById("admin-switch-btn").classList.add("hidden");
-  document.getElementById("admin-back-btn").classList.add("hidden");
-  document.getElementById("undo-btn").classList.add("hidden");
-  document.getElementById("main-view").classList.add("hidden");
-  document.getElementById("admin-view").classList.add("hidden");
-  document.getElementById("login-view").classList.remove("hidden");
-  
-  renderDailyBadge(); 
-});
-
+// 13. ADMINISTRACE - HISTORIE KÁV
 function renderAdminCoffeeHistory() {
   const container = document.getElementById("coffee-history-list");
   if (!container) return;
@@ -556,7 +577,7 @@ function renderAdminCoffeeHistory() {
         <div>
           <div class="coffee-card-title">
             ${coffee.nazev}
-            ${coffee.aktivni === 1 ? '<span class="active-pill">V kávovaru</span>' : ''}
+            ${coffee.aktivni === 1 ? '<span class="active-pill">☕&nbsp;V&nbsp;kávovaru</span>' : ''}
           </div>
           <div class="coffee-card-stats">
             <b>${avg}</b>
@@ -669,6 +690,7 @@ if (adminSaveCoffeeBtn) {
   });
 }
 
+// 14. ADMINISTRACE - CENA KÁVY
 const adminSavePriceBtn = document.getElementById("admin-save-price");
 if (adminSavePriceBtn) {
   adminSavePriceBtn.addEventListener("click", async () => {
@@ -686,6 +708,7 @@ if (adminSavePriceBtn) {
   });
 }
 
+// 15. ADMINISTRACE - SPRÁVA UŽIVATELŮ, PINŮ A PLATEB
 function renderAdminUsers() {
   const tbody = document.getElementById("admin-user-list");
   const select = document.getElementById("payment-user");
@@ -809,7 +832,7 @@ window.adminSaveUser = async function(id) {
   alert(`Uloženo: ${u.name}`);
 };
 
-// 11. STATISTIKY V ADMINISTRACI
+// 16. ADMINISTRACE - PŘEHLEDY TÝDNE A MĚSÍCE
 function getWorkingDaysInCurrentMonth() {
   const now = new Date();
   const year = now.getFullYear();
@@ -898,7 +921,7 @@ function renderUsageStats() {
   });
 }
 
-// Osvěžení dat při rozbalení kterékoliv karty v administraci
+// Osvěžení dat při rozbalení detailů v administraci
 document.querySelectorAll(".admin-details").forEach(detail => {
   detail.addEventListener("toggle", () => {
     if (detail.open) {
@@ -908,7 +931,7 @@ document.querySelectorAll(".admin-details").forEach(detail => {
   });
 });
 
-// START APLIKACE (Přísně seřazeno: 1. Uživatel -> 2. Lokální data a srdíčka -> 3. Síť)
+// START APLIKACE (1. Uživatel -> 2. Mezipaměť s nulovou prodlevou -> 3. Pozadí sítě)
 tryInstantAutoLogin();
 restoreCachedCoffeeData();
 loadData();
