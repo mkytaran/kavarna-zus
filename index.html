@@ -7,22 +7,19 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="ZUŠkafe">
-  <!-- Ikona na plochu pro iOS (musí existovat soubor apple-touch-icon.png, ideálně 180x180 px) -->
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <title>ZUŠkafe</title>
-  <link rel="manifest" href="manifest.json?v=1.1">
-  <link rel="stylesheet" href="style.css?v=2.4">
+  <link rel="manifest" href="manifest.json?v=1.2">
+  <link rel="stylesheet" href="style.css?v=2.6">
 </head>
 <body>
   <div class="app-container">
     
-   <!-- Horní lišta s navigací pro admina -->
+    <!-- Horní lišta s navigací -->
     <div class="top-bar">
       <span class="app-title">☕ ZUŠkafe</span>
       <div class="top-bar-right">
-        <!-- Tlačítko pro vstup do administrace (vidí jen admin) -->
         <button id="admin-switch-btn" class="link-btn admin-nav-btn hidden">⚙️ Správa</button>
-        <!-- Tlačítko pro návrat z administrace zpět (vidí jen admin uvnitř správy) -->
         <button id="admin-back-btn" class="link-btn admin-nav-btn hidden">← Zpět</button>
         <button id="logout-btn" class="link-btn hidden">Odhlásit</button>
       </div>
@@ -45,13 +42,38 @@
           <label for="remember-me">Zapamatovat přihlášení</label>
         </div>
         <button id="login-btn" class="btn btn-primary">Vstoupit do kavárny</button>
+
+        <!-- VSTUP JAKO HOST / ŽÁDOST O ÚČET -->
+        <div class="guest-entry-section">
+          <button type="button" id="guest-toggle-btn" class="guest-link-btn">
+            👤 Nemáte ještě účet? Vstoupit jako Host
+          </button>
+          
+          <div id="guest-box" class="guest-form-box hidden">
+            <h4 style="color: var(--primary); margin-bottom: 8px;">Žádost o kávový účet</h4>
+            <div class="input-group">
+              <label for="guest-name">Jméno a příjmení</label>
+              <input type="text" id="guest-name" placeholder="Např. Petra Nováková">
+            </div>
+            <div class="input-group">
+              <label for="guest-phone">Telefonní číslo (pro zaslání PINu)</label>
+              <input type="tel" id="guest-phone" placeholder="Např. 777123456">
+            </div>
+            <button type="button" id="guest-submit-btn" class="btn btn-secondary" style="margin-top: 4px;">
+              ☕ Vstoupit a dát si kávu
+            </button>
+            <p class="guest-hint">
+              Můžete si rovnou zapsat kávu (bude vedena jako dluh). Správce vám po schválení zašle přihlašovací PIN přes SMS.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- HLAVNÍ OBRAZOVKA -->
     <section id="main-view" class="hidden content-with-bottom-bar flex-main-layout">
       
-      <!-- HORNÍ PRUŽNÁ ČÁST -->
+      <!-- HORNÍ ČÁST -->
       <div class="main-upper-space">
         <!-- 1. Kávový štítek -->
         <div class="coffee-badge">
@@ -74,7 +96,7 @@
           </div>
         </div>
 
-        <!-- 2. Kartička se srdíčky -->
+        <!-- 2. Hodnocení srdíčky -->
         <div class="rating-card rating-box">
           <div class="hearts-row-full" id="hearts-container">
             <button type="button" class="heart-btn" data-val="1"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
@@ -85,10 +107,9 @@
           </div>
         </div>
 
-        <!-- 3. Realistický šálek -->
+        <!-- 3. Velký interaktivní šálek -->
         <div class="cup-center">
           <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu" style="position: relative;">
-            
             <div id="main-cup-badge" class="multi-cup-badge hidden" style="top: 25px; right: 40px; width: 32px; height: 32px; font-size: 1.1rem; border: 2px solid var(--bg-app); z-index: 10;">1</div>
             
             <svg viewBox="0 0 270 195" class="cup-svg">
@@ -175,10 +196,10 @@
         </div>
       </div>
 
-      <!-- SPODNÍ PŘILEPENÁ ČÁST -->
+      <!-- SPODNÍ ČÁST -->
       <div class="main-lower-sticky">
         
-        <!-- Mřížka šálků předplatného vč. zobrazení dluhu -->
+        <!-- Mřížka šálků předplatného vč. QR platby -->
         <div class="cups-container">
           <div class="cups-title-row">
             <span>Stav předplatného</span>
@@ -188,6 +209,11 @@
             </div>
           </div>
           <div class="cups-grid" id="cups-grid"></div>
+
+          <!-- TLAČÍTKO PŘEDPLATIT KÁVU PŘES QR -->
+          <button type="button" id="open-qr-pay-btn" class="btn-prepay-qr">
+            💳 Předplatit kávu (QR platba)
+          </button>
         </div>
 
         <!-- Stav pokladny -->
@@ -203,16 +229,49 @@
 
     </section>
 
+    <!-- MODÁLNÍ OKNO PRO QR PLATBU -->
+    <div id="qr-pay-modal" class="modal-overlay hidden">
+      <div class="modal-dialog">
+        <h3 style="color: var(--primary); margin-bottom: 8px;">Předplatit kávu</h3>
+        
+        <div class="input-group" style="text-align: left;">
+          <label for="qr-amount-input">Částka k zaplacení (Kč):</label>
+          <input type="number" id="qr-amount-input" value="150" step="10" min="10" style="font-size: 1.15rem; font-weight: bold; text-align: center;">
+        </div>
+
+        <div class="qr-info-box">
+          <div><b>Číslo účtu:</b> 737021033/0800</div>
+          <div><b>Zpráva pro příjemce:</b> <span id="qr-msg-text" style="font-weight: 700; color: var(--primary);"></span></div>
+        </div>
+
+        <div class="qr-preview-container">
+          <img id="qr-pay-image" src="" alt="QR Platba" class="qr-image">
+          <div id="qr-loading-spinner" class="qr-spinner hidden">Generuji QR kód...</div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="qr-download-btn" class="btn btn-secondary" style="margin-top: 0;">⬇️ Stáhnout QR</button>
+          <button type="button" id="qr-close-btn" class="btn btn-primary">Zavřít</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ADMIN PANEL -->
     <section id="admin-view" class="hidden content-with-bottom-bar">
       <h2>Administrace</h2>
+
+      <!-- ŽÁDOSTI HOSTŮ O ÚČET A SCHVÁLENÍ PINEM -->
+      <div id="admin-pending-container" class="card hidden" style="border: 2px solid var(--accent); background: #fff8f2; margin-bottom: 10px;">
+        <div class="badge-tag" style="color: #c62828;">NOVÉ ŽÁDOSTI HOSTŮ O ÚČET</div>
+        <div id="admin-pending-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
 
       <div class="card">
         <div class="badge-tag">HISTORIE & HODNOCENÍ VŠECH KÁV</div>
         <div id="coffee-history-list" class="coffee-history-container"></div>
       </div>
 
-      <!-- 1. NASADIT NOVOU KÁVU DO MLÝNKU (ve výchozím stavu sbaleno) -->
+      <!-- 1. NASADIT NOVOU KÁVU DO MLÝNKU -->
       <details class="card admin-details">
         <summary>Nasadit novou kávu do mlýnku <span class="dropdown-arrow">▼</span></summary>
         <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
@@ -236,7 +295,7 @@
         </div>
       </details>
 
-      <!-- 2. CENA ZA 1 KÁVU (ve výchozím stavu sbaleno) -->
+      <!-- 2. CENA ZA 1 KÁVU -->
       <details class="card admin-details">
         <summary>Cena za 1 kávu <span class="dropdown-arrow">▼</span></summary>
         <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
@@ -248,7 +307,7 @@
         </div>
       </details>
 
-      <!-- 3. PŘIPSAT NOVOU PLATBU (ve výchozím stavu sbaleno) -->
+      <!-- 3. PŘIPSAT NOVOU PLATBU -->
       <details class="card admin-details">
         <summary>Připsat novou platbu <span class="dropdown-arrow">▼</span></summary>
         <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
@@ -269,6 +328,10 @@
             <div class="input-group">
               <label for="new-user-pin">Čtyřmístný PIN</label>
               <input type="password" id="new-user-pin" inputmode="numeric" maxlength="4" placeholder="1234">
+            </div>
+            <div class="input-group">
+              <label for="new-user-phone">Telefon (volitelné)</label>
+              <input type="tel" id="new-user-phone" placeholder="777123456">
             </div>
             <button id="admin-create-user-btn" class="btn btn-secondary" style="margin-top: 4px;">Uložit nového kafaře</button>
           </div>
@@ -300,7 +363,7 @@
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Jméno</th>
+                <th>Jméno / PIN</th>
                 <th title="Vypito / Předplaceno">Stav</th>
                 <th title="Celkem zaplaceno (Kč)">Kč zapl.</th>
                 <th title="Celkem vypito za celou dobu">Celk.☕</th>
@@ -314,6 +377,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=3.9"></script>
+  <script src="app.js?v=4.1"></script>
 </body>
 </html>

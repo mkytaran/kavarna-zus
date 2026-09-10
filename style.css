@@ -60,7 +60,7 @@ body {
 .hidden { display: none !important; }
 .content-with-bottom-bar { padding-bottom: 60px; }
 
-/* Nové flexibilní rozložení hlavní obrazovky */
+/* Flexibilní rozvržení hlavní obrazovky */
 .flex-main-layout:not(.hidden) {
   flex: 1;
   display: flex;
@@ -91,7 +91,7 @@ body {
 .top-bar-right {
   display: flex;
   align-items: center;
-  gap: 12px; /* Elegantní rozestup mezi tlačítky nahoře */
+  gap: 12px;
 }
 
 .admin-nav-btn {
@@ -104,10 +104,7 @@ body {
   font-size: 0.85rem;
   transition: opacity 0.2s;
 }
-
-.admin-nav-btn:hover {
-  opacity: 0.85;
-}
+.admin-nav-btn:hover { opacity: 0.85; }
 
 .app-title {
   font-weight: 800;
@@ -184,7 +181,7 @@ body {
 .bean-svg.inactive .bean-body { fill: var(--bean-inactive); }
 .bean-svg.inactive .bean-crease { stroke: var(--bean-line-inactive); }
 
-/* Samostatná kartička pro hodnocení */
+/* Hodnocení */
 .rating-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -283,7 +280,7 @@ body {
   cursor: pointer;
 }
 
-/* Mřížka šálků */
+/* Mřížka šálků a tlačítko předplatného */
 .cups-container {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -312,7 +309,22 @@ body {
 .mini-cup svg { width: 100%; height: 100%; transition: opacity 0.3s, fill 0.3s; }
 .mini-cup.full svg { fill: var(--primary); opacity: 1; }
 .mini-cup.empty svg { fill: var(--card-border); opacity: 0.45; }
-.mini-cup.debt svg { fill: var(--heart-active); opacity: 1; } /* Červený šálek na dluh */
+.mini-cup.debt svg { fill: var(--heart-active); opacity: 1; }
+
+.btn-prepay-qr {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--treasury-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: var(--primary);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-prepay-qr:hover { background: #ded2c4; }
 
 /* Pokladna */
 .treasury-card {
@@ -335,37 +347,93 @@ body {
 }
 .treasury-row b { color: var(--text-main); }
 
-/* Dolní lišta */
-.bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 420px;
-  background: var(--bottom-bar-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-top: 1px solid var(--card-border);
-  padding: 6px 14px;
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  box-shadow: 0 -4px 16px rgba(0,0,0,0.05);
-  z-index: 100;
+/* Vstup hosta v přihlášení */
+.guest-entry-section {
+  margin-top: 16px;
+  border-top: 1px dashed var(--card-border);
+  padding-top: 14px;
+  text-align: center;
 }
-.bottom-bar-btn {
+.guest-link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.guest-form-box {
+  margin-top: 12px;
+  background: var(--bg-app);
+  border: 1.5px dashed var(--accent);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: left;
+}
+.guest-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  margin-top: 6px;
+}
+
+/* Modální okno QR platby */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(44, 26, 17, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.modal-dialog {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
+  border-radius: 18px;
+  padding: 18px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.25);
+}
+.qr-info-box {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: left;
+  background: var(--bg-app);
+  border: 1px solid var(--card-border);
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.qr-preview-container {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.qr-image {
+  width: 200px;
+  height: 200px;
   border-radius: 10px;
-  padding: 6px 14px;
-  font-size: 0.9rem;
+  border: 1px solid var(--card-border);
+  background: #fff;
+}
+.qr-spinner {
+  font-size: 0.85rem;
   font-weight: 700;
-  color: var(--primary);
-  cursor: pointer;
+  color: var(--accent);
+}
+.modal-actions {
+  display: flex;
+  gap: 8px;
 }
 
 /* Administrace */
@@ -397,7 +465,7 @@ body {
   color: var(--primary);
   display: flex;
   align-items: center;
-  flex-wrap: wrap;     /* Pokud se nevejde vedle dlouhého názvu, skočí celý štítek na nový řádek */
+  flex-wrap: wrap;
   gap: 6px;
 }
 .active-pill {
@@ -411,9 +479,9 @@ body {
   border-radius: 6px;
   text-transform: uppercase;
   font-weight: 800;
-  white-space: nowrap; /* Zabrání rozdělení "V" a "KÁVOVARU" */
+  white-space: nowrap;
   vertical-align: middle;
-  flex-shrink: 0;      /* Štítek se nezmáčkne ani na úzkém displeji */
+  flex-shrink: 0;
 }
 .coffee-card-stats {
   display: flex;
@@ -422,10 +490,7 @@ body {
   margin-top: 2px;
   font-size: 0.8rem;
 }
-.coffee-card-stats b {
-  font-size: 1rem;
-  color: var(--primary);
-}
+.coffee-card-stats b { font-size: 1rem; color: var(--primary); }
 .coffee-card-stats .hearts { color: var(--heart-active); letter-spacing: 1px; }
 .coffee-card-details {
   margin-top: 8px;
@@ -476,7 +541,7 @@ body {
   font-weight: 700;
   color: var(--text-muted);
 }
-input[type="text"], input[type="password"], input[type="number"], select.input-select {
+input[type="text"], input[type="password"], input[type="number"], input[type="tel"], select.input-select {
   padding: 10px 12px;
   border: 1.5px solid var(--card-border);
   border-radius: 10px;
@@ -552,7 +617,7 @@ details.admin-details[open] summary .dropdown-arrow { transform: rotate(180deg);
   flex: 1;
   min-width: 0;
   padding-right: 8px;
-  white-space: normal; /* Umožní zalomení, pokud by jméno bylo extrémně dlouhé */
+  white-space: normal;
   overflow: visible;
   text-overflow: clip;
 }

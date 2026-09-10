@@ -1,14 +1,17 @@
 // URL vašeho Google Apps Script Web App
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
 
+// Účet pro QR platby SPAYD
+const IBAN_CZ = "CZ1808000000000737021033"; // Číslo účtu: 737021033/0800
+
 function createBeanSVG(isActive) {
   return `
     <svg viewBox="0 0 30 30" class="bean-svg ${isActive ? 'active' : 'inactive'}">
-      <ellipse cx="15" cy="15" rx="11.5" ry="13.5" class="bean-body" transform="rotate(-25 15 15)" />
-      <path d="M 10.5 8 C 13.5 11.5, 13 14.5, 15 17 C 16.8 19.2, 16.5 21, 19.5 22.5" 
+      <ellipse cx="15" cy="15" rx="10.5" ry="13.5" class="bean-body" transform="rotate(-20 15 15)" />
+      <path d="M 12 5.5 C 13.5 11, 14 15, 17.5 24" 
             class="bean-crease" 
             fill="none" 
-            stroke-width="3.2" 
+            stroke-width="2.6" 
             stroke-linecap="round" />
     </svg>
   `;
@@ -35,13 +38,13 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// 1. PŘIHLÁŠENÍ ZE ZÁLOHY (Okamžitý start)
+// 1. PŘIHLÁŠENÍ ZE ZÁLOHY (Okamžitý start i pro hosty)
 function tryInstantAutoLogin() {
   const savedUser = localStorage.getItem("zus_saved_user");
   if (!savedUser) return;
   try {
     const parsed = JSON.parse(savedUser);
-    if (parsed && parsed.name && parsed.pin) {
+    if (parsed && parsed.name) {
       state.currentUser = parsed;
       showMainScreen(parsed);
     }
@@ -71,13 +74,12 @@ function showMainScreen(user) {
   initRating();
   syncDailyBadge();
 
-  // Návrat do administrace po reloadu, pokud v ní administrátor byl
   if (user.role === "admin" && localStorage.getItem("zus_current_view") === "admin") {
     openAdminScreen();
   }
 }
 
-// 2. OBNOVENÍ MEZIPAMĚTI PRO BLESKOVÝ VZHLED
+// 2. OBNOVENÍ MEZIPAMĚTI
 function restoreCachedCoffeeData() {
   try {
     const cachedKava = localStorage.getItem("zus_cached_kava");
@@ -90,14 +92,13 @@ function restoreCachedCoffeeData() {
     if (cachedRatings) {
       state.ratings = JSON.parse(cachedRatings);
     }
-    
-    initRating(); // Vykreslí srdíčka ihned bez prodlevy
+    initRating();
   } catch (e) {
     console.warn("Chyba čtení mezipaměti:", e);
   }
 }
 
-// 3. TICHÉ STAŽENÍ ČERSTVÝCH DAT ZE SERVERU A SYNCHRONIZACE ODZNÁČKU
+// 3. STAŽENÍ DAT ZE SERVERU
 async function loadData() {
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getData`);
@@ -126,9 +127,7 @@ async function loadData() {
     const savedUser = localStorage.getItem("zus_saved_user");
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
-      const freshUser = state.users.find(
-        u => u.name.toLowerCase() === parsed.name.toLowerCase() && String(u.pin) === String(parsed.pin)
-      );
+      const freshUser = state.users.find(u => String(u.id) === String(parsed.id));
       if (freshUser) {
         state.currentUser = freshUser;
         localStorage.setItem("zus_saved_user", JSON.stringify(freshUser));
@@ -137,7 +136,7 @@ async function loadData() {
       }
     }
 
-    // PŘEPOČET DENNÍHO ODZNÁČKU ZE SERVEROVÝCH LOGŮ (Autorita tabulky)
+    // Přepočet denního odznáčku ze serverových logů
     if (state.currentUser && state.logs && state.logs.length > 0) {
       const todayMidnight = new Date();
       todayMidnight.setHours(0, 0, 0, 0);
@@ -153,6 +152,7 @@ async function loadData() {
 
     const adminView = document.getElementById("admin-view");
     if (adminView && !adminView.classList.contains("hidden")) {
+      renderAdminPendingRequests();
       renderAdminUsers();
       renderUsageStats();
       renderAdminCoffeeHistory();
@@ -162,7 +162,7 @@ async function loadData() {
   }
 }
 
-// PŘIHLAŠOVÁNÍ A ODHLAŠOVÁNÍ
+// PŘIHLAŠOVÁNÍ BĚŽNÉHO UŽIVATELE S PINEM
 document.getElementById("login-btn").addEventListener("click", () => {
   const name = document.getElementById("login-name").value.trim();
   const pin = document.getElementById("login-pin").value.trim();
@@ -186,6 +186,62 @@ document.getElementById("login-btn").addEventListener("click", () => {
   }
 });
 
+// PŘIHLÁŠENÍ HOSTA (ŽÁDOST O ÚČET)
+const guestToggleBtn = document.getElementById("guest-toggle-btn");
+const guestBox = document.getElementById("guest-box");
+const guestSubmitBtn = document.getElementById("guest-submit-btn");
+
+if (guestToggleBtn) {
+  guestToggleBtn.addEventListener("click", () => {
+    guestBox.classList.toggle("hidden");
+  });
+}
+
+if (guestSubmitBtn) {
+  guestSubmitBtn.addEventListener("click", async () => {
+    const name = document.getElementById("guest-name").value.trim();
+    const phone = document.getElementById("guest-phone").value.trim();
+
+    if (!name) {
+      alert("Zadejte prosím své jméno.");
+      return;
+    }
+    if (!phone || phone.length < 9) {
+      alert("Zadejte prosím platné telefonní číslo pro zaslání PINu.");
+      return;
+    }
+
+    guestSubmitBtn.disabled = true;
+    guestSubmitBtn.textContent = "Připravuji vstup...";
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "requestAccount", name: name, phone: phone })
+      });
+      const data = await res.json();
+
+      if (data.success && data.user) {
+        state.currentUser = data.user;
+        state.users.push(data.user);
+        localStorage.setItem("zus_saved_user", JSON.stringify(data.user));
+
+        alert(`Vítejte, ${name}! Váš kávový účet byl založen. Můžete si dát kávu. Správce vám brzy pošle PIN přes SMS.`);
+        showMainScreen(data.user);
+      } else {
+        alert("Došlo k chybě při zakládání účtu.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Chyba spojení se serverem.");
+    } finally {
+      guestSubmitBtn.disabled = false;
+      guestSubmitBtn.textContent = "☕ Vstoupit a dát si kávu";
+    }
+  });
+}
+
+// ODHLÁŠENÍ
 document.getElementById("logout-btn").addEventListener("click", () => {
   state.currentUser = null;
   state.clicksInSession = 0;
@@ -230,7 +286,7 @@ function renderCoffeeBadge() {
   renderBeansMeter("beans-prazeni", state.kava.prazeni || 3);
 }
 
-// 5. BLESKOVÉ HODNOCENÍ SRDÍČKY
+// 5. HODNOCENÍ SRDÍČKY
 function initRating() {
   const hearts = document.querySelectorAll("#hearts-container .heart-btn");
   let myRating = 0;
@@ -306,7 +362,7 @@ function paintHearts(val) {
   });
 }
 
-// 6. DENNÍ ODZNÁČEK NA ŠÁLKU
+// 6. DENNÍ ODZNÁČEK
 function syncDailyBadge() {
   if (!state.currentUser) return;
   const uId = state.currentUser.id;
@@ -349,12 +405,11 @@ function renderDailyBadge() {
   }
 }
 
-// 7. BEZPEČNÁ KONTROLA A ČASOVAČ PRO VRÁCENÍ OMYLU
+// 7. KONTROLA A ČASOVAČ PRO VRÁCENÍ OMYLU
 function checkUndoAvailability() {
   const undoBtn = document.getElementById("undo-btn");
   if (!undoBtn) return;
 
-  // Lze vrátit POUZE z 2+ káv na 1 (nikdy na nulu) a v aktivním okně
   if (state.todayDrank > 1 && state.clicksInSession > 0) {
     undoBtn.classList.remove("hidden");
   } else {
@@ -365,17 +420,14 @@ function checkUndoAvailability() {
 
 function triggerUndoTimer() {
   if (undoTimeout) clearTimeout(undoTimeout);
-
   checkUndoAvailability();
-
-  // Po 120 sekundách (2 minuty) možnost opravy vyprší
   undoTimeout = setTimeout(() => {
     state.clicksInSession = 0;
     checkUndoAvailability();
   }, 120000);
 }
 
-// 8. ODKLIKÁVÁNÍ KÁVY (pro sebe, kamaráda i na dluh)
+// 8. ODKLIKÁVÁNÍ KÁVY
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
 
@@ -389,7 +441,6 @@ if (cupAction) {
     state.todayDrank += 1;
     u.totalDrank = (Number(u.totalDrank) || 0) + 1;
 
-    // Lokální optimistický záznam do logu pro okamžité promítnutí do statistik
     state.logs.push({
       date: new Date().toISOString(),
       userId: u.id,
@@ -403,7 +454,7 @@ if (cupAction) {
   });
 }
 
-// 9. VRÁCENÍ OMYLU (stornování překliku)
+// 9. VRÁCENÍ OMYLU
 if (undoBtn) {
   undoBtn.addEventListener("click", async () => {
     const u = state.currentUser;
@@ -414,7 +465,6 @@ if (undoBtn) {
     state.todayDrank -= 1;
     u.totalDrank = Math.max(0, (Number(u.totalDrank) || 0) - 1);
 
-    // Záznam stornování do lokálního logu
     state.logs.push({
       date: new Date().toISOString(),
       userId: u.id,
@@ -442,7 +492,7 @@ async function syncDrankToServer(userId, drank) {
   }
 }
 
-// 10. DYNAMICKÁ MŘÍŽKA ŠÁLKŮ & ZOBRAZENÍ DLUHU V KČ
+// 10. MŘÍŽKA ŠÁLKŮ & ZOBRAZENÍ DLUHU
 function updateCupsView() {
   const u = state.currentUser;
   if (!u) return;
@@ -520,7 +570,80 @@ function renderFinance() {
   if (elRoz) elRoz.textContent = `${rozdil} Kč`;
 }
 
-// 12. PŘEPÍNAČ ADMINISTRACE V HORNÍ LIŠTĚ
+// 12. GENERÁTOR ČESKÉ QR PLATBY (SPAYD)
+function generateSpaydString(amount, message) {
+  // Odstranění diakritiky pro stoprocentní kompatibilitu s bankovními aplikacemi
+  const cleanMsg = message.normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 60);
+  const cleanAmount = Number(amount).toFixed(2);
+  return `SPD*1.0*ACC:${IBAN_CZ}*AM:${cleanAmount}*CC:CZK*MSG:${cleanMsg}*`;
+}
+
+function updateQrPaymentModal() {
+  if (!state.currentUser) return;
+
+  const amount = Number(document.getElementById("qr-amount-input").value) || 150;
+  const msg = `${state.currentUser.name} za kafe`;
+  document.getElementById("qr-msg-text").textContent = msg;
+
+  const spayd = generateSpaydString(amount, msg);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(spayd)}`;
+
+  const img = document.getElementById("qr-pay-image");
+  const spinner = document.getElementById("qr-loading-spinner");
+
+  img.classList.add("hidden");
+  spinner.classList.remove("hidden");
+
+  img.onload = () => {
+    spinner.classList.add("hidden");
+    img.classList.remove("hidden");
+  };
+  img.src = qrUrl;
+}
+
+const openQrPayBtn = document.getElementById("open-qr-pay-btn");
+const qrModal = document.getElementById("qr-pay-modal");
+const qrCloseBtn = document.getElementById("qr-close-btn");
+const qrAmountInput = document.getElementById("qr-amount-input");
+const qrDownloadBtn = document.getElementById("qr-download-btn");
+
+if (openQrPayBtn) {
+  openQrPayBtn.addEventListener("click", () => {
+    qrModal.classList.remove("hidden");
+    updateQrPaymentModal();
+  });
+}
+
+if (qrCloseBtn) {
+  qrCloseBtn.addEventListener("click", () => {
+    qrModal.classList.add("hidden");
+  });
+}
+
+if (qrAmountInput) {
+  qrAmountInput.addEventListener("input", () => {
+    updateQrPaymentModal();
+  });
+}
+
+if (qrDownloadBtn) {
+  qrDownloadBtn.addEventListener("click", async () => {
+    const img = document.getElementById("qr-pay-image");
+    if (!img.src) return;
+    try {
+      const resp = await fetch(img.src);
+      const blob = await resp.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `QR-platba-${state.currentUser ? state.currentUser.name : 'kafe'}.png`;
+      a.click();
+    } catch (e) {
+      window.open(img.src, "_blank");
+    }
+  });
+}
+
+// 13. PŘEPÍNAČ ADMINISTRACE V HORNÍ LIŠTĚ
 const adminSwitchBtn = document.getElementById("admin-switch-btn");
 if (adminSwitchBtn) {
   adminSwitchBtn.addEventListener("click", () => {
@@ -545,6 +668,7 @@ function openAdminScreen() {
   if (adminBtn) adminBtn.classList.add("hidden");
   if (backBtn) backBtn.classList.remove("hidden");
 
+  renderAdminPendingRequests();
   renderAdminCoffeeHistory();
   renderAdminUsers();
   renderUsageStats();
@@ -561,7 +685,71 @@ function closeAdminScreen() {
   if (adminBtn) adminBtn.classList.remove("hidden");
 }
 
-// 13. ADMINISTRACE - HISTORIE KÁV
+// 14. ADMINISTRACE - ŽÁDOSTI HOSTŮ & ZASLÁNÍ PINU PŘES SMS
+function renderAdminPendingRequests() {
+  const container = document.getElementById("admin-pending-container");
+  const list = document.getElementById("admin-pending-list");
+  if (!container || !list) return;
+
+  const pendingUsers = state.users.filter(u => u.pin === "PENDING" || !u.pin);
+
+  if (pendingUsers.length === 0) {
+    container.classList.add("hidden");
+    list.innerHTML = "";
+    return;
+  }
+
+  container.classList.remove("hidden");
+  list.innerHTML = "";
+
+  pendingUsers.forEach(pu => {
+    const div = document.createElement("div");
+    div.style = "background:#fff; border:1px solid var(--card-border); padding:8px 10px; border-radius:8px;";
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <b>${pu.name}</b>
+        <span style="font-size:0.85rem; color:var(--text-muted);">Tel: <a href="tel:${pu.phone}">${pu.phone}</a></span>
+      </div>
+      <div style="margin-top:6px; display:flex; gap:6px; align-items:center;">
+        <input type="text" id="assign-pin-${pu.id}" placeholder="Zadej PIN" maxlength="4" style="width:75px; padding:4px; text-align:center;">
+        <button class="btn btn-primary btn-small" onclick="adminSetPinAndSendSMS(${pu.id}, '${pu.phone}', '${pu.name}')">
+          Uložit PIN & Poslat SMS
+        </button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+window.adminSetPinAndSendSMS = async function(userId, phone, name) {
+  const pinInput = document.getElementById(`assign-pin-${userId}`);
+  const pin = pinInput.value.trim();
+
+  if (!pin || pin.length !== 4) {
+    alert("Zadejte prosím 4místný číselný PIN.");
+    return;
+  }
+
+  const user = state.users.find(u => String(u.id) === String(userId));
+  if (user) user.pin = pin;
+
+  // Uložíme PIN na server
+  await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "adminSetPin", userId: userId, pin: pin })
+  });
+
+  // Otevře nativní SMS aplikaci v mobilu administrátora
+  const cleanPhone = phone.replace(/\s+/g, "");
+  const smsBody = encodeURIComponent(`Ahoj ${name}, tvuj PIN do kavarenkove aplikace ZUSkafe je: ${pin}. Aplikace: https://mkytaran.github.io/kavarna-zus/`);
+  window.location.href = `sms:${cleanPhone}?body=${smsBody}`;
+
+  await loadData();
+  renderAdminPendingRequests();
+  renderAdminUsers();
+};
+
+// 15. ADMINISTRACE - HISTORIE KÁV
 function renderAdminCoffeeHistory() {
   const container = document.getElementById("coffee-history-list");
   if (!container) return;
@@ -704,7 +892,7 @@ if (adminSaveCoffeeBtn) {
   });
 }
 
-// 14. ADMINISTRACE - CENA KÁVY
+// 16. ADMINISTRACE - CENA KÁVY
 const adminSavePriceBtn = document.getElementById("admin-save-price");
 if (adminSavePriceBtn) {
   adminSavePriceBtn.addEventListener("click", async () => {
@@ -722,7 +910,7 @@ if (adminSavePriceBtn) {
   });
 }
 
-// 15. ADMINISTRACE - SPRÁVA UŽIVATELŮ, PINŮ A PLATEB
+// 17. ADMINISTRACE - SPRÁVA UŽIVATELŮ
 function renderAdminUsers() {
   const tbody = document.getElementById("admin-user-list");
   const select = document.getElementById("payment-user");
@@ -748,7 +936,7 @@ function renderAdminUsers() {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td style="font-weight:700;">
-          ${u.name} <span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">(PIN: ${u.pin})</span><br>
+          ${u.name} <span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">(${u.pin === 'PENDING' ? 'Čeká na PIN' : 'PIN: ' + u.pin})</span><br>
           <span style="font-size:0.75rem; color:${statusColor}; font-weight:800;">
             Zůstatek: ${balance}
           </span>
@@ -783,6 +971,7 @@ if (adminCreateUserBtn) {
   adminCreateUserBtn.addEventListener("click", async () => {
     const name = document.getElementById("new-user-name").value.trim();
     const pin = document.getElementById("new-user-pin").value.trim();
+    const phone = document.getElementById("new-user-phone").value.trim();
 
     if (!name || !pin || pin.length !== 4) {
       alert("Zadejte prosím platné jméno a čtyřmístný PIN.");
@@ -791,11 +980,12 @@ if (adminCreateUserBtn) {
 
     document.getElementById("new-user-name").value = "";
     document.getElementById("new-user-pin").value = "";
+    document.getElementById("new-user-phone").value = "";
     document.getElementById("new-user-fields").classList.add("hidden");
 
     await fetch(SCRIPT_URL, {
       method: "POST",
-      body: JSON.stringify({ action: "addUser", name: name, pin: pin })
+      body: JSON.stringify({ action: "addUser", name: name, pin: pin, phone: phone })
     });
 
     await loadData();
@@ -836,7 +1026,6 @@ window.adminSaveUser = async function(id) {
   const u = state.users.find(x => String(x.id) === String(id));
   if (!u) return;
 
-  // Pokud admin upravuje sám sebe, okamžitě zohledníme rozdíl i v denním odznáčku
   if (state.currentUser && String(state.currentUser.id) === String(id)) {
     const diff = drk - Number(u.drank);
     state.todayDrank = Math.max(0, state.todayDrank + diff);
@@ -853,7 +1042,7 @@ window.adminSaveUser = async function(id) {
   alert(`Uloženo: ${u.name}`);
 };
 
-// 16. ADMINISTRACE - PŘEHLEDY TÝDNE A MĚSÍCE
+// 18. PŘEHLEDY TÝDNE A MĚSÍCE
 function getWorkingDaysInCurrentMonth() {
   const now = new Date();
   const year = now.getFullYear();
@@ -942,17 +1131,18 @@ function renderUsageStats() {
   });
 }
 
-// Osvěžení dat při rozbalení detailů v administraci
+// Osvěžení dat při rozbalení detailů
 document.querySelectorAll(".admin-details").forEach(detail => {
   detail.addEventListener("toggle", () => {
     if (detail.open) {
       renderUsageStats();
       renderAdminUsers();
+      renderAdminPendingRequests();
     }
   });
 });
 
-// START APLIKACE (1. Uživatel -> 2. Mezipaměť a srdíčka ihned -> 3. Tiché stažení ze serveru)
+// START APLIKACE
 tryInstantAutoLogin();
 restoreCachedCoffeeData();
 loadData();
