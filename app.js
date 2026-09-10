@@ -16,7 +16,7 @@ function createBeanSVG(isActive) {
 
 let state = {
   users: [],
-  finance: { cenaKavy: 15 },
+  finance: { cenaKavy: 10 },
   kava: { id: 1, nazev: "Brasil Pergamino Sul de Minas", acidita: 2, intenzita: 4, prazeni: 3, aktivni: 1 },
   allCoffees: [],
   ratings: [],
@@ -104,7 +104,7 @@ async function loadData() {
     const data = await res.json();
 
     state.users = data.users || [];
-    state.finance = data.finance || { cenaKavy: 15 };
+    state.finance = data.finance || { cenaKavy: 10 };
     if (data.kava) {
       state.kava = data.kava;
       localStorage.setItem("zus_cached_kava", JSON.stringify(data.kava));
@@ -449,7 +449,7 @@ function updateCupsView() {
 
   const totalCups = Number(u.prepaid) || 0;
   const drankCups = Number(u.drank) || 0;
-  const cenaKavy = Number(state.finance.cenaKavy) || 15;
+  const cenaKavy = Number(state.finance.cenaKavy) || 10;
   
   const balance = totalCups - drankCups;
   const balanceMoney = balance * cenaKavy;
