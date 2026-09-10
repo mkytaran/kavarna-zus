@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <title>ZUŠkafe</title>
   <link rel="manifest" href="manifest.json?v=1.2">
-  <link rel="stylesheet" href="style.css?v=2.6">
+  <link rel="stylesheet" href="style.css?v=2.7">
 </head>
 <body>
   <div class="app-container">
@@ -76,25 +76,40 @@
       <!-- HORNÍ ČÁST -->
       <div class="main-upper-space">
         <!-- 1. Kávový štítek -->
-        <div class="coffee-badge">
-          <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
-          <div class="badge-title" id="coffee-name">Brasil Pergamino Sul de Minas</div>
-          
-          <div class="coffee-attributes">
-            <div class="attr-row">
-              <span class="attr-label">Acidita</span>
-              <div class="beans-meter" id="beans-acidita"></div>
-            </div>
-            <div class="attr-row">
-              <span class="attr-label">Intenzita</span>
-              <div class="beans-meter" id="beans-intenzita"></div>
-            </div>
-            <div class="attr-row">
-              <span class="attr-label">Pražení</span>
-              <div class="beans-meter" id="beans-prazeni"></div>
-            </div>
-          </div>
+        <!-- MÍSTO PŮVODNÍHO <div class="coffee-badge"> VLOŽTE TOTO: -->
+<div class="coffee-flip-container" id="coffee-flip-card" title="Kliknutím otočíš pro více informací">
+  <div class="coffee-badge-inner">
+    <!-- Přední strana -->
+    <div class="coffee-badge-front">
+      <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
+      <div class="badge-title" id="coffee-name">Načítám kávu...</div>
+      
+      <div class="coffee-attributes">
+        <div class="attr-row">
+          <span class="attr-label">Acidita</span>
+          <div class="beans-meter" id="beans-acidita"></div>
         </div>
+        <div class="attr-row">
+          <span class="attr-label">Intenzita</span>
+          <div class="beans-meter" id="beans-intenzita"></div>
+        </div>
+        <div class="attr-row">
+          <span class="attr-label">Pražení</span>
+          <div class="beans-meter" id="beans-prazeni"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Zadní strana -->
+    <div class="coffee-badge-back">
+      <div class="badge-tag">INFORMACE O KÁVĚ</div>
+      <div class="back-title" id="coffee-back-name">Název kávy</div>
+      <div class="back-content" id="coffee-info-text">
+        Žádné doplňující informace nebyly zadány.
+      </div>
+    </div>
+  </div>
+</div>
 
         <!-- 2. Hodnocení srdíčky -->
         <div class="rating-card rating-box">
@@ -271,33 +286,44 @@
         <div id="coffee-history-list" class="coffee-history-container"></div>
       </div>
 
-      <!-- 1. NASADIT NOVOU KÁVU DO MLÝNKU -->
-      <details class="card admin-details">
-        <summary>Nasadit novou kávu do mlýnku <span class="dropdown-arrow">▼</span></summary>
-        <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
-          <div class="input-group">
-            <label for="admin-coffee-name">Název kávy & původ</label>
-            <input type="text" id="admin-coffee-name" placeholder="např. Kolumbie Supremo">
-          </div>
-          <div class="input-group">
-            <label for="admin-acidita">Acidita (1–5)</label>
-            <input type="number" id="admin-acidita" min="1" max="5" value="3">
-          </div>
-          <div class="input-group">
-            <label for="admin-intenzita">Intenzita (1–5)</label>
-            <input type="number" id="admin-intenzita" min="1" max="5" value="3">
-          </div>
-          <div class="input-group">
-            <label for="admin-prazeni">Stupeň pražení (1–5)</label>
-            <input type="number" id="admin-prazeni" min="1" max="5" value="3">
-          </div>
-          <button id="admin-save-coffee" class="btn btn-primary">Uložit a nasadit do kávovaru</button>
-        </div>
-      </details>
+      <!-- NOVÁ KARTA SE STRUČNÝM ŽEBŘÍČKEM -->
+<details class="card admin-details" open>
+  <summary>🏆 Žebříček kafařů <span class="dropdown-arrow">▼</span></summary>
+  <div style="padding-top: 10px; margin-top: 5px; border-top: 1px dashed var(--card-border);">
+    <table class="admin-table">
+      <thead><tr><th>Jméno</th><th>Vypito ☕</th><th>Zaplaceno Kč</th></tr></thead>
+      <tbody id="admin-leaderboard-list"></tbody>
+    </table>
+  </div>
+</details>
+
+<!-- 1. NOVÁ KÁVA -->
+<details class="card admin-details">
+  <summary>🌱 Nová káva <span class="dropdown-arrow">▼</span></summary>
+  <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
+    <div class="input-group">
+      <label>Název kávy & původ</label>
+      <input type="text" id="admin-coffee-name">
+    </div>
+    <div class="input-group">
+      <label>Doplňující informace (Příběh, chuťový profil...)</label>
+      <textarea id="admin-coffee-info" rows="3" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--card-border); resize:vertical; font-family:inherit;"></textarea>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <div class="input-group" style="flex:1;"><label>Acidita</label><input type="number" id="admin-acidita" min="1" max="5" value="3"></div>
+      <div class="input-group" style="flex:1;"><label>Intenzita</label><input type="number" id="admin-intenzita" min="1" max="5" value="3"></div>
+      <div class="input-group" style="flex:1;"><label>Pražení</label><input type="number" id="admin-prazeni" min="1" max="5" value="3"></div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top: 10px;">
+      <button id="admin-save-coffee-only" class="btn btn-secondary" style="margin:0; font-size:0.85rem;">💾 Jen uložit</button>
+      <button id="admin-save-coffee-deploy" class="btn btn-primary" style="margin:0; font-size:0.85rem;">☕ Uložit & Nasadit</button>
+    </div>
+  </div>
+</details>
 
       <!-- 2. CENA ZA 1 KÁVU -->
       <details class="card admin-details">
-        <summary>Cena za 1 kávu <span class="dropdown-arrow">▼</span></summary>
+        <summary>🏷️ Cena za 1 kávu <span class="dropdown-arrow">▼</span></summary>
         <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
           <div class="input-group">
             <label for="admin-coffee-price">Aktuální cena (Kč)</label>
@@ -309,7 +335,7 @@
 
       <!-- 3. PŘIPSAT NOVOU PLATBU -->
       <details class="card admin-details">
-        <summary>Připsat novou platbu <span class="dropdown-arrow">▼</span></summary>
+        <summary>💸 Připsat novou platbu <span class="dropdown-arrow">▼</span></summary>
         <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
           <div class="input-group">
             <label for="payment-user">Kafař</label>
@@ -346,19 +372,19 @@
 
       <!-- TENTO TÝDEN -->
       <details class="card admin-details">
-        <summary>Tento týden (Po-Pá) <span class="dropdown-arrow">▼</span></summary>
+        <summary>📅 Tento týden (Po-Pá) <span class="dropdown-arrow">▼</span></summary>
         <div id="admin-weekly-list" class="stats-list"></div>
       </details>
 
       <!-- TENTO MĚSÍC -->
       <details class="card admin-details">
-        <summary>Tento měsíc <span class="dropdown-arrow">▼</span></summary>
+        <summary>🗓️ Tento měsíc <span class="dropdown-arrow">▼</span></summary>
         <div id="admin-monthly-list" class="stats-list"></div>
       </details>
 
       <!-- CELKOVÁ SPRÁVA A PLATBY -->
       <details class="card admin-details">
-        <summary>Celková správa uživatelů <span class="dropdown-arrow">▼</span></summary>
+        <summary>⚙️ Celková správa uživatelů <span class="dropdown-arrow">▼</span></summary>
         <div style="overflow-x: auto; padding-top: 10px;">
           <table class="admin-table">
             <thead>
@@ -377,6 +403,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=4.1"></script>
+  <script src="app.js?v=4.2"></script>
 </body>
 </html>
