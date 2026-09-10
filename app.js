@@ -290,10 +290,27 @@ document.getElementById("logout-btn").addEventListener("click", () => {
 // ==========================================
 // 3. OTOČNÁ KARTA KÁVY A HODNOCENÍ
 // ==========================================
+// ==========================================
+// 3. OTOČNÁ KARTA KÁVY A HODNOCENÍ
+// ==========================================
+let flipTimeout = null;
 const flipCard = document.getElementById("coffee-flip-card");
+
 if (flipCard) {
   flipCard.addEventListener("click", () => {
     flipCard.classList.toggle("flipped");
+    
+    // Zrušení předchozího odpočtu (pro případ, že uživatel kliká rychle za sebou)
+    if (flipTimeout) {
+      clearTimeout(flipTimeout);
+    }
+    
+    // Pokud je karta otočená na zadní stranu, po 15 vteřinách ji vrátíme
+    if (flipCard.classList.contains("flipped")) {
+      flipTimeout = setTimeout(() => {
+        flipCard.classList.remove("flipped");
+      }, 10000); // 15000 milisekund = 15 sekund
+    }
   });
 }
 
