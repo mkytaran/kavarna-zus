@@ -740,3 +740,18 @@ details.admin-details[open] summary .dropdown-arrow { transform: rotate(180deg);
   border-width: 0 34px 34px 0;
   border-color: var(--bg-app) var(--bg-app) var(--accent) var(--accent);
 }
+/* Plynulý přechod pro rozostřované prvky */
+.rating-card,
+.cup-center,
+.main-lower-sticky {
+  transition: filter 0.4s ease, opacity 0.4s ease;
+}
+
+/* Když je karta otočená, rozmažeme zbytek obrazovky */
+body.card-flipped-active .rating-card,
+body.card-flipped-active .cup-center,
+body.card-flipped-active .main-lower-sticky {
+  filter: blur(3.5px);
+  opacity: 0.65;
+  pointer-events: none; /* Zabrání nechtěnému kliknutí na šálek, dokud je karta otočená */
+}
