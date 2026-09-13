@@ -31,10 +31,23 @@ let state = {
 
 let undoTimeout = null;
 
-// Registrace Service Workeru
+// Registrace Service Workeru s automatickou detekcí změn
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW reg failed: ", err));
+    navigator.serviceWorker.register("./sw.js").then((reg) => {
+      // Vynutí kontrolu nového sw.js při každém otevření
+      reg.update();
+    }).catch((err) => console.log("SW reg failed: ", err));
+
+    // Pokud SW na pozadí zjistí, že se změnil styl nebo JS, tiše reloadne stránku
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("message", (event) => {
+      if (event.data?.type === "ASSET_UPDATED" && !refreshing) {
+        refreshing = true;
+        console.log("Detekována nová verze assetů, obnovuji...");
+        window.location.reload();
+      }
+    });
   });
 }
 
