@@ -477,21 +477,76 @@ function triggerUndoTimer() {
 
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
+const cupLabel = document.querySelector(".cup-click-label");
+
+// Logika pro samotný zápočet vypité kávy
+function executeDrinkCoffee() {
+  const u = state.currentUser;
+  if (!u) return;
+  u.drank += 1;
+  state.clicksInSession += 1;
+  state.todayDrank += 1;
+  u.totalDrank = (Number(u.totalDrank) || 0) + 1;
+  state.logs.push({ date: new Date().toISOString(), userId: u.id, diff: 1 });
+
+  saveDailyBadge(); 
+  updateCupsView();
+  triggerUndoTimer();
+  syncDrankToServer(u.id, u.drank);
+}
+
+// Obsluha přidržení (Long Press ~ 500 ms)
+let pressTimer = null;
+let longPressTriggered = false;
+
+function handlePressStart(e) {
+  if (e.type === "mousedown" && e.button !== 0) return; // ignorujeme pravé tlačítko
+  if (!state.currentUser) return;
+
+  longPressTriggered = false;
+  if (cupAction) cupAction.classList.add("is-pressing");
+  if (cupLabel) cupLabel.textContent = "Připravuji kávu...";
+
+  pressTimer = setTimeout(() => {
+    longPressTriggered = true;
+    if (cupAction) cupAction.classList.remove("is-pressing");
+    if (cupLabel) cupLabel.textContent = "Podrž pro vypití ☕";
+
+    // Haptická odezva na mobilu
+    if (navigator.vibrate) {
+      try { navigator.vibrate(60); } catch (err) {}
+    }
+
+    executeDrinkCoffee();
+  }, 500);
+}
+
+function handlePressEnd() {
+  if (pressTimer) {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+  }
+  if (cupAction) cupAction.classList.remove("is-pressing");
+  if (!longPressTriggered && cupLabel) {
+    cupLabel.textContent = "Podrž pro vypití ☕";
+  }
+}
 
 if (cupAction) {
-  cupAction.addEventListener("click", () => {
-    const u = state.currentUser;
-    if (!u) return;
-    u.drank += 1;
-    state.clicksInSession += 1;
-    state.todayDrank += 1;
-    u.totalDrank = (Number(u.totalDrank) || 0) + 1;
-    state.logs.push({ date: new Date().toISOString(), userId: u.id, diff: 1 });
+  // Dotyková zařízení (zruší se i při posunu stránky/scrollu)
+  cupAction.addEventListener("touchstart", handlePressStart, { passive: true });
+  cupAction.addEventListener("touchend", handlePressEnd);
+  cupAction.addEventListener("touchcancel", handlePressEnd);
+  cupAction.addEventListener("touchmove", handlePressEnd);
 
-    saveDailyBadge(); 
-    updateCupsView();
-    triggerUndoTimer();
-    syncDrankToServer(u.id, u.drank);
+  // Myš pro PC
+  cupAction.addEventListener("mousedown", handlePressStart);
+  cupAction.addEventListener("mouseup", handlePressEnd);
+  cupAction.addEventListener("mouseleave", handlePressEnd);
+
+  // Blokace klasického rychlého kliknutí
+  cupAction.addEventListener("click", (e) => {
+    e.preventDefault();
   });
 }
 
