@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <title>ZUŠkafe</title>
   <link rel="manifest" href="manifest.json?v=1.2">
-  <link rel="stylesheet" href="style.css?v=3.7">
+  <link rel="stylesheet" href="style.css?v=3.9">
 </head>
 <body>
   <div class="app-container">
@@ -81,7 +81,15 @@
           <div class="coffee-badge-inner">
             <!-- Přední strana -->
             <div class="coffee-badge-front">
-              <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
+              <div class="badge-top-row">
+                <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
+                <!-- Celkové hodnocení vedle ohnutého rohu -->
+                <div id="coffee-rating-badge" class="badge-rating-pill">
+                  <span class="star-icon">★</span>
+                  <span id="badge-rating-avg">-.-</span>
+                  <span id="badge-rating-count" class="rating-count">(0)</span>
+                </div>
+              </div>
               <div class="badge-title" id="coffee-name">Načítám kávu...</div>
               
               <div class="coffee-attributes">
@@ -410,6 +418,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=4.8"></script>
+  <script src="app.js?v=5.0"></script>
 </body>
 </html>

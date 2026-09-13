@@ -345,6 +345,24 @@ function renderCoffeeBadge() {
       : "Zatím nebyly přidány žádné podrobnosti k této kávě.";
   }
 
+  // Výpočet celkového průměru hodnocení aktuální kávy
+  const avgEl = document.getElementById("badge-rating-avg");
+  const countEl = document.getElementById("badge-rating-count");
+  if (avgEl && countEl) {
+    const currentRatings = state.ratings.filter(
+      r => String(r.kavaId) === String(state.kava.id) && Number(r.rating) > 0
+    );
+    const count = currentRatings.length;
+    if (count > 0) {
+      const sum = currentRatings.reduce((acc, r) => acc + Number(r.rating), 0);
+      avgEl.textContent = (sum / count).toFixed(1);
+      countEl.textContent = `(${count})`;
+    } else {
+      avgEl.textContent = "-.-";
+      countEl.textContent = "(0)";
+    }
+  }
+
   renderBeansMeter("beans-acidita", state.kava.acidita || 3);
   renderBeansMeter("beans-intenzita", state.kava.intenzita || 3);
   renderBeansMeter("beans-prazeni", state.kava.prazeni || 3);
@@ -389,6 +407,8 @@ function initRating() {
         state.ratings.push({ kavaId: state.kava.id, userId: state.currentUser.id, userName: state.currentUser.name, rating: val });
       }
       localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
+      // Okamžitá aktualizace štítku s novým průměrem
+      renderCoffeeBadge();
 
       try {
         await fetch(SCRIPT_URL, {
