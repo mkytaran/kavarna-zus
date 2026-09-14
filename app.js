@@ -58,21 +58,49 @@ let state = {
 
 let undoTimeout = null;
 
-// Registrace Service Workeru s automatickou detekcí změn
+// Registrace a automatická aktualizace PWA (Android + iOS Safari)
 if ("serviceWorker" in navigator) {
+  let swRegistration = null;
+  let isRefreshing = false;
+
+  const triggerUpdate = () => {
+    if (swRegistration) {
+      swRegistration.update().catch(() => {});
+    }
+  };
+
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").then((reg) => {
+      swRegistration = reg;
+
+      // 1. Okamžitá kontrola při spuštění
       reg.update();
+
+      // 2. Pravidelná kontrola na pozadí každých 15 minut při běhu
+      setInterval(() => triggerUpdate(), 15 * 60 * 1000);
     }).catch((err) => console.log("SW reg failed: ", err));
 
-    let refreshing = false;
+    // Zpráva ze Service Workeru, že je v cache nová verze
     navigator.serviceWorker.addEventListener("message", (event) => {
-      if (event.data?.type === "ASSET_UPDATED" && !refreshing) {
-        refreshing = true;
-        console.log("Detekována nová verze assetů, obnovuji...");
-        window.location.reload();
+      if (event.data?.type === "ASSET_UPDATED" && !isRefreshing) {
+        isRefreshing = true;
+        // Na iOS Safari funguje nejlépe reload s vymazáním hash kotvy
+        window.location.href = window.location.origin + window.location.pathname;
       }
     });
+  });
+
+  // 3. Klíčové pro mobily: kontrola při probuzení aplikace z pozadí (iOS i Android)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      triggerUpdate();
+    }
+  });
+
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+      triggerUpdate();
+    }
   });
 }
 

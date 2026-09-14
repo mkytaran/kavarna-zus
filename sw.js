@@ -5,9 +5,7 @@ const STATIC_ASSETS = [
   "./index.html",
   "./style.css",
   "./app.js",
-  "./manifest.json",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./manifest.json"
 ];
 
 // Instalace - stáhne aktuální soubory s obchvatem HTTP cache prohlížeče
@@ -21,15 +19,26 @@ self.addEventListener("install", (event) => {
             .then((res) => {
               if (res.ok) return cache.put(url, res);
             })
-            .catch(() => {});
+            .catch((err) => console.warn("SW install cache failed for:", url, err));
         })
       );
     })
   );
 });
 
+// Aktivace - okamžité převzetí kontroly nad všemi klienty
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      // Pročištění případných starých neplatných cache
+      caches.keys().then((keys) => {
+        return Promise.all(
+          keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+        );
+      })
+    ])
+  );
 });
 
 self.addEventListener("fetch", (event) => {
@@ -38,7 +47,7 @@ self.addEventListener("fetch", (event) => {
 
   if (request.method !== "GET") return;
 
-  // 1. Google Sheets / Apps Script API a externí QR kód -> VŽDY NATIVNÍ SÍŤ
+  // 1. Google Apps Script API a QR server -> VŽDY NATIVNÍ SÍŤ
   if (
     url.hostname.includes("script.google.com") ||
     url.hostname.includes("googleusercontent.com") ||
@@ -63,29 +72,38 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 3. Statické assety (CSS, JS, obrázky) -> STALE-WHILE-REVALIDATE
+  // 3. Statické assety (CSS, JS) -> STALE-WHILE-REVALIDATE
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      // Dotaz na pozadí ověřující ETag/datum změny na serveru
       const networkUpdate = fetch(request, { cache: "no-cache" })
         .then(async (networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const cache = await caches.open(CACHE_NAME);
-            
-            // Detekce, zda se soubor skutečně změnil oproti cache
+
             if (cachedResponse) {
               const oldEtag = cachedResponse.headers.get("ETag");
               const newEtag = networkResponse.headers.get("ETag");
               const oldModified = cachedResponse.headers.get("Last-Modified");
               const newModified = networkResponse.headers.get("Last-Modified");
 
-              const hasChanged = (newEtag && oldEtag !== newEtag) || 
-                                 (newModified && oldModified !== newModified);
+              let hasChanged = false;
+
+              if (newEtag && oldEtag) {
+                hasChanged = oldEtag !== newEtag;
+              } else if (newModified && oldModified) {
+                hasChanged = oldModified !== newModified;
+              } else {
+                // Pojistka pro servery bez hlaviček: porovnání délky obsahu
+                const oldLen = cachedResponse.headers.get("Content-Length");
+                const newLen = networkResponse.headers.get("Content-Length");
+                if (oldLen && newLen && oldLen !== newLen) {
+                  hasChanged = true;
+                }
+              }
 
               if (hasChanged) {
                 await cache.put(request, networkResponse.clone());
-                // Upozorníme aplikaci na změnu klíčového skriptu/stylu
-                notifyClientsAboutUpdate();
+                await notifyClientsAboutUpdate();
                 return networkResponse;
               }
             }
@@ -94,18 +112,21 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // Offline stav ignorujeme
+          // Offline provoz - tichý návrat
         });
 
-      // Vrátíme okamžitě z cache, pokud máme; jinak čekáme na síť
       return cachedResponse || networkUpdate;
     })
   );
 });
 
-// Informuje všechny otevřené záložky/PWA okna
+// Informuje všechny otevřené PWA instance včetně standalone oken na iOS
 async function notifyClientsAboutUpdate() {
-  const clients = await self.clients.matchAll();
+  const clients = await self.clients.matchAll({
+    includeUncontrolled: true,
+    type: "window"
+  });
+
   clients.forEach((client) => {
     client.postMessage({ type: "ASSET_UPDATED" });
   });
