@@ -83,14 +83,17 @@
             <!-- Přední strana -->
             <div class="coffee-badge-front">
               <div class="badge-top-row">
-                <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
-                <!-- Celkové hodnocení vedle ohnutého rohu -->
-                <div id="coffee-rating-badge" class="badge-rating-pill">
-                  <span class="star-icon">★</span>
-                  <span id="badge-rating-avg">-.-</span>
-                  <span id="badge-rating-count" class="rating-count">(0)</span>
-                </div>
-              </div>
+              <div style="display: flex; gap: 6px; align-items: center;">
+              <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
+              <div id="coffee-days-badge" class="badge-tag" style="background: rgba(186, 107, 44, 0.15); color: var(--accent); font-weight: 700;"></div>
+            </div>
+            <!-- Celkové hodnocení vedle ohnutého rohu -->
+            <div id="coffee-rating-badge" class="badge-rating-pill">
+            <span class="star-icon">★</span>
+            <span id="badge-rating-avg">-.-</span>
+            <span id="badge-rating-count" class="rating-count">(0)</span>
+          </div>
+          </div>
               <div class="badge-title" id="coffee-name">Načítám kávu...</div>
               
               <div class="coffee-attributes">

@@ -346,6 +346,7 @@ function renderCoffeeBadge() {
   const nameEl = document.getElementById("coffee-name");
   const backNameEl = document.getElementById("coffee-back-name");
   const infoEl = document.getElementById("coffee-info-text");
+  const daysEl = document.getElementById("coffee-days-badge");
 
   if (nameEl) nameEl.textContent = state.kava.nazev || "Výběrová káva";
   if (backNameEl) backNameEl.textContent = state.kava.nazev || "Výběrová káva";
@@ -354,6 +355,24 @@ function renderCoffeeBadge() {
     infoEl.textContent = state.kava.info && state.kava.info.trim() !== "" 
       ? state.kava.info 
       : "Zatím nebyly přidány žádné podrobnosti k této kávě.";
+  }
+
+  // Zobrazení kolikátý den je v kávovaru
+  if (daysEl) {
+    if (state.kava.nasazenoOd) {
+      const start = new Date(state.kava.nasazenoOd);
+      const now = new Date();
+      // Rozdíl kalendářních dnů (dnes = 1. den)
+      start.setHours(0,0,0,0);
+      now.setHours(0,0,0,0);
+      const diffTime = Math.abs(now - start);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      daysEl.textContent = `${diffDays}. DEN`;
+      daysEl.classList.remove("hidden");
+    } else {
+      daysEl.textContent = "1. DEN";
+      daysEl.classList.remove("hidden");
+    }
   }
 
   // Výpočet celkového průměru hodnocení aktuální kávy
@@ -715,51 +734,104 @@ function renderAdminCoffeeHistory() {
   if (!container) return;
   container.innerHTML = "";
 
-  state.allCoffees.forEach(coffee => {
+  // 1. Spočítáme průměrné hodnocení a počet hlasů pro každou kávu
+  const coffeesWithStats = state.allCoffees.map(coffee => {
     const coffeeRatings = state.ratings.filter(r => String(r.kavaId) === String(coffee.id) && r.rating > 0);
-    let avg = "0.0";
-    let roundAvg = 0;
+    let avg = 0;
     if (coffeeRatings.length > 0) {
-      const sum = coffeeRatings.reduce((acc, r) => acc + r.rating, 0);
-      avg = (sum / coffeeRatings.length).toFixed(1);
-      roundAvg = Math.round(Number(avg));
+      const sum = coffeeRatings.reduce((acc, r) => acc + Number(r.rating), 0);
+      avg = Number((sum / coffeeRatings.length).toFixed(1));
     }
+    return {
+      ...coffee,
+      ratingsList: coffeeRatings,
+      avgRating: avg,
+      roundAvg: Math.round(avg)
+    };
+  });
 
+  // 2. Řazení: V kávovaru má absolutní přednost, zbytek sestupně podle hodnocení (a pak dle ID)
+  coffeesWithStats.sort((a, b) => {
+    if (a.aktivni === 1) return -1;
+    if (b.aktivni === 1) return 1;
+    if (b.avgRating !== a.avgRating) {
+      return b.avgRating - a.avgRating;
+    }
+    return b.id - a.id;
+  });
+
+  // 3. Vykreslení kompaktních řádků (všechny sbalené)
+  coffeesWithStats.forEach(coffee => {
+    const isActive = coffee.aktivni === 1;
     const card = document.createElement("div");
-    card.className = `coffee-card-item ${coffee.aktivni === 1 ? "is-active" : ""}`;
-    let heartsStr = ""; for (let i = 1; i <= 5; i++) heartsStr += i <= roundAvg ? "♥" : "♡";
+    card.className = `coffee-card-item ${isActive ? "is-active" : ""}`;
+
+    let heartsStr = "";
+    for (let i = 1; i <= 5; i++) {
+      heartsStr += i <= coffee.roundAvg ? "♥" : "♡";
+    }
 
     let dateInfo = `<span style="font-size:0.75rem; color:#888;">Zatím nebyla nasazena</span>`;
     if (coffee.nasazenoOd) {
       const od = new Date(coffee.nasazenoOd);
       const doDatum = coffee.nasazenoDo ? new Date(coffee.nasazenoDo) : new Date();
-      const dny = Math.max(1, Math.ceil((doDatum - od) / (1000 * 60 * 60 * 24)));
+      od.setHours(0, 0, 0, 0);
+      doDatum.setHours(0, 0, 0, 0);
+      const dny = Math.max(1, Math.round((doDatum - od) / (1000 * 60 * 60 * 24)) + 1);
       dateInfo = `<span style="font-size:0.75rem; color:var(--text-muted);">🗓️ ${od.toLocaleDateString('cs-CZ')} – ${coffee.nasazenoDo ? new Date(coffee.nasazenoDo).toLocaleDateString('cs-CZ') : 'dosud'} <b>(${dny} dní)</b></span>`;
     }
 
     card.innerHTML = `
-      <div class="coffee-card-head" onclick="toggleCoffeeDetail(${coffee.id})">
-        <div>
-          <div class="coffee-card-title">${coffee.nazev} ${coffee.aktivni === 1 ? '<span class="active-pill">V kávovaru</span>' : ''}</div>
-          ${dateInfo}
-          <div class="coffee-card-stats"><b>${avg}</b> <span class="hearts">${heartsStr}</span></div>
+      <div class="coffee-card-head" onclick="toggleCoffeeDetail(${coffee.id})" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; padding:6px 4px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <b style="font-size:0.95rem;">${coffee.nazev}</b>
+          ${isActive ? '<span class="active-pill" style="font-size:0.7rem; padding:2px 6px;">V kávovaru</span>' : ''}
+          <span style="font-size:0.85rem; color:var(--primary); font-weight:700;">★ ${coffee.avgRating > 0 ? coffee.avgRating.toFixed(1) : '-.-'}</span>
         </div>
-        <span id="arrow-${coffee.id}" class="dropdown-arrow">▼</span>
+        <span id="arrow-${coffee.id}" class="dropdown-arrow" style="font-size:0.8rem;">▼</span>
       </div>
-      <div id="detail-${coffee.id}" class="coffee-card-details hidden">
-        <textarea id="edit-info-${coffee.id}" rows="2" style="width:100%; font-size:0.8rem; padding:4px;" placeholder="Doplňující informace...">${coffee.info || ""}</textarea>
-        <button class="btn-small" style="margin-bottom:8px;" onclick="updateCoffeeInfo(${coffee.id})">Uložit text</button>
-        <div id="votes-${coffee.id}">${coffeeRatings.length === 0 ? '<div style="font-size:0.8rem; font-style:italic; color:var(--text-muted);">Nikdo nehodnotil</div>' : ''}</div>
-        <div class="card-actions">${coffee.aktivni !== 1 ? `<button class="btn btn-primary btn-small" onclick="setActiveCoffee(${coffee.id})">Nasadit do mlýnku</button>` : ''}</div>
+
+      <div id="detail-${coffee.id}" class="coffee-card-details hidden" style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--card-border);">
+        <div style="margin-bottom:6px;">${dateInfo}</div>
+
+        <!-- Parametry chuti -->
+        <div style="display:flex; gap:12px; margin-bottom:8px; font-size:0.8rem; background:rgba(0,0,0,0.03); padding:4px 8px; border-radius:6px;">
+          <span>Acidita: <b>${coffee.acidita || 3}/5</b></span>
+          <span>Intenzita: <b>${coffee.intenzita || 3}/5</b></span>
+          <span>Pražení: <b>${coffee.prazeni || 3}/5</b></span>
+        </div>
+
+        <div style="font-size:0.85rem; margin-bottom:6px;">
+          Celkově: <b>${coffee.avgRating > 0 ? coffee.avgRating.toFixed(1) : '0.0'}</b> <span class="hearts" style="color:var(--heart-active);">${heartsStr}</span> (${coffee.ratingsList.length} hodnocení)
+        </div>
+
+        <textarea id="edit-info-${coffee.id}" rows="2" style="width:100%; font-size:0.8rem; padding:4px; border-radius:6px; border:1px solid var(--card-border);" placeholder="Doplňující informace...">${coffee.info || ""}</textarea>
+        <button class="btn-small" style="margin:6px 0;" onclick="updateCoffeeInfo(${coffee.id})">Uložit text</button>
+
+        <div id="votes-${coffee.id}" style="margin:4px 0;">
+          ${coffeeRatingsHtml(coffee.ratingsList)}
+        </div>
+
+        <div class="card-actions" style="margin-top:6px;">
+          ${!isActive ? `<button class="btn btn-primary btn-small" onclick="setActiveCoffee(${coffee.id})">☕ Nasadit do mlýnku</button>` : ''}
+        </div>
       </div>
     `;
     container.appendChild(card);
-
-    const votesContainer = card.querySelector(`#votes-${coffee.id}`);
-    coffeeRatings.forEach(r => {
-      votesContainer.innerHTML += `<div class="rating-user-row"><span>${r.userName}</span><span class="rating-user-hearts">${"♥".repeat(r.rating)}${"♡".repeat(5 - r.rating)}</span></div>`;
-    });
   });
+}
+
+// Pomocná funkce pro vypsání hlasů káv
+function coffeeRatingsHtml(ratings) {
+  if (!ratings || ratings.length === 0) {
+    return '<div style="font-size:0.8rem; font-style:italic; color:var(--text-muted);">Nikdo nehodnotil</div>';
+  }
+  return ratings.map(r => `
+    <div class="rating-user-row" style="display:flex; justify-content:space-between; font-size:0.8rem; padding:2px 0;">
+      <span>${r.userName}</span>
+      <span class="rating-user-hearts" style="color:var(--heart-active);">${"♥".repeat(r.rating)}${"♡".repeat(5 - r.rating)}</span>
+    </div>
+  `).join("");
 }
 
 window.toggleCoffeeDetail = function(id) {
@@ -845,11 +917,30 @@ function renderAdminUsers() {
 
   const sortedUsers = [...state.users].sort((a, b) => b.totalDrank - a.totalDrank);
   
+  // Součty pro žebříček
+  const totalCount = sortedUsers.length;
+  let totalDrankSum = 0;
+  let totalPaidSum = 0;
+
   sortedUsers.forEach(u => {
+    totalDrankSum += Number(u.totalDrank) || 0;
+    totalPaidSum += Number(u.totalPaid) || 0;
+
     if (leaderBoard) {
       leaderBoard.innerHTML += `<tr><td style="font-weight:700;">${u.name}</td><td style="font-weight:800; color:var(--primary); text-align:center;">${u.totalDrank}</td><td style="color:var(--text-muted); text-align:center;">${u.totalPaid} Kč</td></tr>`;
     }
   });
+
+  // Souhrnný řádek pod žebříčkem
+  if (leaderBoard && totalCount > 0) {
+    leaderBoard.innerHTML += `
+      <tr style="border-top: 2px solid var(--card-border); font-weight: 800;">
+        <td style="color: var(--text-muted); font-size: 0.9rem;">${totalCount}</td>
+        <td style="text-align: center; color: var(--primary); font-size: 1rem;">${totalDrankSum}</td>
+        <td style="text-align: center; color: var(--text-main); font-size: 0.95rem;">${totalPaidSum} Kč</td>
+      </tr>
+    `;
+  }
 
   state.users.forEach(u => {
     if (select) select.appendChild(new Option(u.name, u.id));
