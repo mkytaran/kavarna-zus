@@ -2,7 +2,7 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEDpLlUikYhMCJlolZZOgwqI8Gb_gMOYLwE4FDUtgD7hMIcHFGywGMwVG4pNNLRLU5CA/exec";
 
 // Účet pro QR platby SPAYD
-const IBAN_CZ = "CZ1808000000000737021033"; // Číslo účtu: 737021033/0800
+const IBAN_CZ = "CZ5208000000006334341013";
 
 function createBeanSVG(isActive) {
   return `
