@@ -17,6 +17,33 @@ function createBeanSVG(isActive) {
   `;
 }
 
+// Spočítá pracovní dny (Po-Pá) mezi dvěma daty včetně počátečního i dnešního dne
+function countWorkingDays(startDate, endDate = new Date()) {
+  if (!startDate) return 1;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  // Vytvoříme čistá kalendářní data bez vlivu hodin a časových zón
+  let cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const target = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+  if (cur.getTime() > target.getTime()) return 1;
+
+  let workDays = 0;
+
+  // Cyklus prochází dny včetně cílového dne
+  while (cur.getTime() <= target.getTime()) {
+    const dayOfWeek = cur.getDay(); // 0 = neděle, 6 = sobota
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      workDays++;
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  return Math.max(1, workDays);
+}
+
 let state = {
   users: [],
   finance: { cenaKavy: 10 },
@@ -357,17 +384,11 @@ function renderCoffeeBadge() {
       : "Zatím nebyly přidány žádné podrobnosti k této kávě.";
   }
 
-  // Zobrazení kolikátý den je v kávovaru
+  // Zobrazení kolikátý pracovní den je v kávovaru (bez víkendů)
   if (daysEl) {
-    if (state.kava.nasazenoOd) {
-      const start = new Date(state.kava.nasazenoOd);
-      const now = new Date();
-      // Rozdíl kalendářních dnů (dnes = 1. den)
-      start.setHours(0,0,0,0);
-      now.setHours(0,0,0,0);
-      const diffTime = Math.abs(now - start);
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      daysEl.textContent = `${diffDays}. DEN`;
+    if (state.kava && state.kava.nasazenoOd) {
+      const diffWorkDays = countWorkingDays(state.kava.nasazenoOd, new Date());
+      daysEl.textContent = `${diffWorkDays}. DEN`;
       daysEl.classList.remove("hidden");
     } else {
       daysEl.textContent = "1. DEN";
@@ -775,10 +796,10 @@ function renderAdminCoffeeHistory() {
     if (coffee.nasazenoOd) {
       const od = new Date(coffee.nasazenoOd);
       const doDatum = coffee.nasazenoDo ? new Date(coffee.nasazenoDo) : new Date();
-      od.setHours(0, 0, 0, 0);
-      doDatum.setHours(0, 0, 0, 0);
-      const dny = Math.max(1, Math.round((doDatum - od) / (1000 * 60 * 60 * 24)) + 1);
-      dateInfo = `<span style="font-size:0.75rem; color:var(--text-muted);">🗓️ ${od.toLocaleDateString('cs-CZ')} – ${coffee.nasazenoDo ? new Date(coffee.nasazenoDo).toLocaleDateString('cs-CZ') : 'dosud'} <b>(${dny} dní)</b></span>`;
+      
+      const dny = countWorkingDays(od, doDatum);
+      const dayWord = dny === 1 ? 'den' : (dny >= 2 && dny <= 4 ? 'dny' : 'dní');
+      dateInfo = `<span style="font-size:0.75rem; color:var(--text-muted);">🗓️ ${od.toLocaleDateString('cs-CZ')} – ${coffee.nasazenoDo ? new Date(coffee.nasazenoDo).toLocaleDateString('cs-CZ') : 'dosud'} <b>(${dny} prac. ${dayWord})</b></span>`;
     }
 
     card.innerHTML = `
