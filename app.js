@@ -35,11 +35,9 @@ let undoTimeout = null;
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").then((reg) => {
-      // Vynutí kontrolu nového sw.js při každém otevření
       reg.update();
     }).catch((err) => console.log("SW reg failed: ", err));
 
-    // Pokud SW na pozadí zjistí, že se změnil styl nebo JS, tiše reloadne stránku
     let refreshing = false;
     navigator.serviceWorker.addEventListener("message", (event) => {
       if (event.data?.type === "ASSET_UPDATED" && !refreshing) {
@@ -404,7 +402,7 @@ function initRating() {
 
   hearts.forEach(btn => {
     btn.onclick = async (e) => {
-      e.stopPropagation(); // Zabraní otočení karty, pokud by bylo srdíčko uvnitř karty
+      e.stopPropagation();
       const val = Number(btn.getAttribute("data-val"));
       if (!state.currentUser || !state.kava) return;
 
@@ -420,6 +418,7 @@ function initRating() {
         state.ratings.push({ kavaId: state.kava.id, userId: state.currentUser.id, userName: state.currentUser.name, rating: val });
       }
       localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
+      
       // Okamžitá aktualizace štítku s novým průměrem
       renderCoffeeBadge();
 
@@ -490,76 +489,21 @@ function triggerUndoTimer() {
 
 const cupAction = document.getElementById("cup-action");
 const undoBtn = document.getElementById("undo-btn");
-const cupLabel = document.querySelector(".cup-click-label");
-
-// Logika pro samotný zápočet vypité kávy
-function executeDrinkCoffee() {
-  const u = state.currentUser;
-  if (!u) return;
-  u.drank += 1;
-  state.clicksInSession += 1;
-  state.todayDrank += 1;
-  u.totalDrank = (Number(u.totalDrank) || 0) + 1;
-  state.logs.push({ date: new Date().toISOString(), userId: u.id, diff: 1 });
-
-  saveDailyBadge(); 
-  updateCupsView();
-  triggerUndoTimer();
-  syncDrankToServer(u.id, u.drank);
-}
-
-// Obsluha přidržení (Long Press ~ 500 ms)
-let pressTimer = null;
-let longPressTriggered = false;
-
-function handlePressStart(e) {
-  if (e.type === "mousedown" && e.button !== 0) return; // ignorujeme pravé tlačítko
-  if (!state.currentUser) return;
-
-  longPressTriggered = false;
-  if (cupAction) cupAction.classList.add("is-pressing");
-  if (cupLabel) cupLabel.textContent = "Připravuji kávu...";
-
-  pressTimer = setTimeout(() => {
-    longPressTriggered = true;
-    if (cupAction) cupAction.classList.remove("is-pressing");
-    if (cupLabel) cupLabel.textContent = "Podrž pro vypití ☕";
-
-    // Haptická odezva na mobilu
-    if (navigator.vibrate) {
-      try { navigator.vibrate(60); } catch (err) {}
-    }
-
-    executeDrinkCoffee();
-  }, 500);
-}
-
-function handlePressEnd() {
-  if (pressTimer) {
-    clearTimeout(pressTimer);
-    pressTimer = null;
-  }
-  if (cupAction) cupAction.classList.remove("is-pressing");
-  if (!longPressTriggered && cupLabel) {
-    cupLabel.textContent = "Podrž pro vypití ☕";
-  }
-}
 
 if (cupAction) {
-  // Dotyková zařízení (zruší se i při posunu stránky/scrollu)
-  cupAction.addEventListener("touchstart", handlePressStart, { passive: true });
-  cupAction.addEventListener("touchend", handlePressEnd);
-  cupAction.addEventListener("touchcancel", handlePressEnd);
-  cupAction.addEventListener("touchmove", handlePressEnd);
+  cupAction.addEventListener("click", () => {
+    const u = state.currentUser;
+    if (!u) return;
+    u.drank += 1;
+    state.clicksInSession += 1;
+    state.todayDrank += 1;
+    u.totalDrank = (Number(u.totalDrank) || 0) + 1;
+    state.logs.push({ date: new Date().toISOString(), userId: u.id, diff: 1 });
 
-  // Myš pro PC
-  cupAction.addEventListener("mousedown", handlePressStart);
-  cupAction.addEventListener("mouseup", handlePressEnd);
-  cupAction.addEventListener("mouseleave", handlePressEnd);
-
-  // Blokace klasického rychlého kliknutí
-  cupAction.addEventListener("click", (e) => {
-    e.preventDefault();
+    saveDailyBadge(); 
+    updateCupsView();
+    triggerUndoTimer();
+    syncDrankToServer(u.id, u.drank);
   });
 }
 
