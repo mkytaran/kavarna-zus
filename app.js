@@ -121,40 +121,58 @@ function tryInstantAutoLogin() {
   }
 }
 
-function restoreCachedCoffeeData() {
+function restoreAllCachedData() {
   try {
     const cachedKava = localStorage.getItem("zus_cached_kava");
     const cachedRatings = localStorage.getItem("zus_cached_ratings");
+    const cachedFinance = localStorage.getItem("zus_cached_finance");
+    const cachedUsers = localStorage.getItem("zus_cached_users");
 
-    if (cachedKava) {
-      state.kava = JSON.parse(cachedKava);
-      renderCoffeeBadge();
-    }
-    if (cachedRatings) {
-      state.ratings = JSON.parse(cachedRatings);
-    }
+    if (cachedKava) state.kava = JSON.parse(cachedKava);
+    if (cachedRatings) state.ratings = JSON.parse(cachedRatings);
+    if (cachedFinance) state.finance = JSON.parse(cachedFinance);
+    if (cachedUsers) state.users = JSON.parse(cachedUsers);
+
+    // Okamžitě vykreslíme všechna dostupná data
+    renderCoffeeBadge();
+    renderFinance();
     initRating();
+
+    // Pokud uživatel existuje, obnovíme rovnou i jeho stav šálků
+    if (state.currentUser && state.users.length > 0) {
+      const freshUser = state.users.find(u => String(u.id) === String(state.currentUser.id));
+      if (freshUser) {
+        state.currentUser = freshUser;
+        updateCupsView();
+      }
+    }
   } catch (e) {
-    console.warn("Chyba čtení mezipaměti:", e);
+    console.warn("Chyba čtení lokální mezipaměti:", e);
   }
 }
 
 async function loadData() {
+  const syncDot = document.getElementById("global-sync-dot");
+  if (syncDot) syncDot.classList.add("syncing");
+
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getData`);
     const data = await res.json();
 
     state.users = data.users || [];
     state.finance = data.finance || { cenaKavy: 10 };
-    if (data.kava) {
-      state.kava = data.kava;
-      localStorage.setItem("zus_cached_kava", JSON.stringify(data.kava));
-    }
+    if (data.kava) state.kava = data.kava;
     state.allCoffees = data.allCoffees || [];
     state.ratings = data.ratings || [];
     state.logs = data.logs || [];
-    localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
 
+    // Uložíme čerstvá data do localStorage pro příští bleskový start
+    localStorage.setItem("zus_cached_kava", JSON.stringify(state.kava));
+    localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
+    localStorage.setItem("zus_cached_finance", JSON.stringify(state.finance));
+    localStorage.setItem("zus_cached_users", JSON.stringify(state.users));
+
+    // Aktualizace UI s tichým porovnáním
     renderCoffeeBadge();
     renderFinance();
     initRating();
@@ -198,7 +216,9 @@ async function loadData() {
       renderAdminCoffeeHistory();
     }
   } catch (err) {
-    console.error("Chyba při synchronizaci:", err);
+    console.error("Chyba při synchronizaci se serverem:", err);
+  } finally {
+    if (syncDot) syncDot.classList.remove("syncing");
   }
 }
 
@@ -1099,5 +1119,5 @@ document.querySelectorAll(".admin-details").forEach(detail => {
 // START APLIKACE
 // ==========================================
 tryInstantAutoLogin();
-restoreCachedCoffeeData();
-loadData();
+restoreAllCachedData(); // Bleskově osadí celou obrazovku včerejšími daty
+loadData();             // Na pozadí potichu ověří novinky ze serveru
