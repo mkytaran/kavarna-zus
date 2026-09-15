@@ -24,7 +24,6 @@ function countWorkingDays(startDate, endDate = new Date()) {
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  // Vytvoříme čistá kalendářní data bez vlivu hodin a časových zón
   let cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const target = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
@@ -32,7 +31,6 @@ function countWorkingDays(startDate, endDate = new Date()) {
 
   let workDays = 0;
 
-  // Cyklus prochází dny včetně cílového dne
   while (cur.getTime() <= target.getTime()) {
     const dayOfWeek = cur.getDay(); // 0 = neděle, 6 = sobota
     if (dayOfWeek !== 0 && dayOfWeek !== 6) {
@@ -72,25 +70,18 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").then((reg) => {
       swRegistration = reg;
-
-      // 1. Okamžitá kontrola při spuštění
       reg.update();
-
-      // 2. Pravidelná kontrola na pozadí každých 15 minut při běhu
       setInterval(() => triggerUpdate(), 15 * 60 * 1000);
     }).catch((err) => console.log("SW reg failed: ", err));
 
-    // Zpráva ze Service Workeru, že je v cache nová verze
     navigator.serviceWorker.addEventListener("message", (event) => {
       if (event.data?.type === "ASSET_UPDATED" && !isRefreshing) {
         isRefreshing = true;
-        // Na iOS Safari funguje nejlépe reload s vymazáním hash kotvy
         window.location.href = window.location.origin + window.location.pathname;
       }
     });
   });
 
-  // 3. Klíčové pro mobily: kontrola při probuzení aplikace z pozadí (iOS i Android)
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       triggerUpdate();
@@ -133,12 +124,10 @@ function restoreAllCachedData() {
     if (cachedFinance) state.finance = JSON.parse(cachedFinance);
     if (cachedUsers) state.users = JSON.parse(cachedUsers);
 
-    // Okamžitě vykreslíme všechna dostupná data
     renderCoffeeBadge();
     renderFinance();
     initRating();
 
-    // Pokud uživatel existuje, obnovíme rovnou i jeho stav šálků
     if (state.currentUser && state.users.length > 0) {
       const freshUser = state.users.find(u => String(u.id) === String(state.currentUser.id));
       if (freshUser) {
@@ -166,13 +155,11 @@ async function loadData() {
     state.ratings = data.ratings || [];
     state.logs = data.logs || [];
 
-    // Uložíme čerstvá data do localStorage pro příští bleskový start
     localStorage.setItem("zus_cached_kava", JSON.stringify(state.kava));
     localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
     localStorage.setItem("zus_cached_finance", JSON.stringify(state.finance));
     localStorage.setItem("zus_cached_users", JSON.stringify(state.users));
 
-    // Aktualizace UI s tichým porovnáním
     renderCoffeeBadge();
     renderFinance();
     initRating();
@@ -194,7 +181,6 @@ async function loadData() {
       }
     }
 
-    // Přepočet denního odznáčku ze serverových logů
     if (state.currentUser && state.logs && state.logs.length > 0) {
       const todayMidnight = new Date();
       todayMidnight.setHours(0, 0, 0, 0);
@@ -251,7 +237,6 @@ function showMainScreen(user) {
   }
 }
 
-// Chytřejší přihlašování s ověřením
 document.getElementById("login-btn").addEventListener("click", async () => {
   const name = document.getElementById("login-name").value.trim();
   const pin = document.getElementById("login-pin").value.trim();
@@ -267,7 +252,6 @@ document.getElementById("login-btn").addEventListener("click", async () => {
     u => u.name.toLowerCase() === name.toLowerCase() && String(u.pin) === pin
   );
 
-  // Pokud se nenašel, ověříme raději čerstvá data ze serveru (mohl být právě schválen/přidán)
   if (!user) {
     const originalText = loginBtn.textContent;
     loginBtn.textContent = "Ověřuji údaje na serveru...";
@@ -300,7 +284,6 @@ document.getElementById("login-btn").addEventListener("click", async () => {
   }
 });
 
-// VSTUP HOSTA (ŽÁDOST O ÚČET BEZ PINU)
 const guestToggleBtn = document.getElementById("guest-toggle-btn");
 const guestBox = document.getElementById("guest-box");
 const guestSubmitBtn = document.getElementById("guest-submit-btn");
@@ -347,7 +330,6 @@ if (guestSubmitBtn) {
   });
 }
 
-// Odhlášení
 document.getElementById("logout-btn").addEventListener("click", () => {
   state.currentUser = null;
   state.clicksInSession = 0;
@@ -397,7 +379,6 @@ if (flipCard) {
 
     if (isNowFlipped) {
       document.body.classList.add("card-flipped-active");
-      // Po 15 sekundách otočíme zpět a zrušíme rozostření
       flipTimeout = setTimeout(() => {
         unflipCard();
       }, 15000);
@@ -421,7 +402,6 @@ function renderCoffeeBadge() {
   const nameEl = document.getElementById("coffee-name");
   const backNameEl = document.getElementById("coffee-back-name");
   const infoEl = document.getElementById("coffee-info-text");
-  const daysEl = document.getElementById("coffee-days-badge");
 
   if (nameEl) nameEl.textContent = state.kava.nazev || "Výběrová káva";
   if (backNameEl) backNameEl.textContent = state.kava.nazev || "Výběrová káva";
@@ -432,7 +412,7 @@ function renderCoffeeBadge() {
       : "Zatím nebyly přidány žádné podrobnosti k této kávě.";
   }
 
-  // Zobrazení kolikátý pracovní den je káva v kávovaru
+  // Zobrazení dne bez ikony
   const daysBadge = document.getElementById("coffee-days-badge");
   const daysVal = document.getElementById("coffee-days-val");
 
@@ -446,13 +426,32 @@ function renderCoffeeBadge() {
     }
   }
 
-  // Výpočet celkového průměru hodnocení aktuální kávy
+  // Výpočet celkového průměru hodnocení aktuální kávy (deduplikace podle data)
   const avgEl = document.getElementById("badge-rating-avg");
   const countEl = document.getElementById("badge-rating-count");
   if (avgEl && countEl) {
-    const currentRatings = state.ratings.filter(
+    const rawRatings = state.ratings.filter(
       r => String(r.kavaId) === String(state.kava.id) && Number(r.rating) > 0
     );
+
+    const uniqueMap = new Map();
+    rawRatings.forEach(r => {
+      const uid = String(r.userId);
+      const existing = uniqueMap.get(uid);
+
+      if (!existing) {
+        uniqueMap.set(uid, r);
+      } else {
+        const timeExisting = existing.date ? new Date(existing.date).getTime() : 0;
+        const timeCurrent = r.date ? new Date(r.date).getTime() : 0;
+
+        if (timeCurrent >= timeExisting) {
+          uniqueMap.set(uid, r);
+        }
+      }
+    });
+
+    const currentRatings = Array.from(uniqueMap.values());
     const count = currentRatings.length;
     if (count > 0) {
       const sum = currentRatings.reduce((acc, r) => acc + Number(r.rating), 0);
@@ -499,23 +498,36 @@ function initRating() {
       paintHearts(val);
       localStorage.setItem(`zus_my_rating_${state.kava.id}_${state.currentUser.id}`, val);
 
+      const nowIso = new Date().toISOString();
       const existing = state.ratings.find(
         r => String(r.kavaId) === String(state.kava.id) && String(r.userId) === String(state.currentUser.id)
       );
       if (existing) {
         existing.rating = val;
+        existing.date = nowIso;
       } else {
-        state.ratings.push({ kavaId: state.kava.id, userId: state.currentUser.id, userName: state.currentUser.name, rating: val });
+        state.ratings.push({ 
+          kavaId: state.kava.id, 
+          userId: state.currentUser.id, 
+          userName: state.currentUser.name, 
+          rating: val,
+          date: nowIso
+        });
       }
       localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
       
-      // Okamžitá aktualizace štítku s novým průměrem
       renderCoffeeBadge();
 
       try {
         await fetch(SCRIPT_URL, {
           method: "POST",
-          body: JSON.stringify({ action: "saveRating", kavaId: state.kava.id, userId: state.currentUser.id, userName: state.currentUser.name, rating: val })
+          body: JSON.stringify({ 
+            action: "saveRating", 
+            kavaId: state.kava.id, 
+            userId: state.currentUser.id, 
+            userName: state.currentUser.name, 
+            rating: val 
+          })
         });
       } catch (err) { console.error("Chyba při ukládání hodnocení:", err); }
     };
@@ -805,23 +817,45 @@ function renderAdminCoffeeHistory() {
   if (!container) return;
   container.innerHTML = "";
 
-  // 1. Spočítáme průměrné hodnocení a počet hlasů pro každou kávu
+  // 1. Spočítáme průměrné hodnocení a počet hlasů s filtrací podle data
   const coffeesWithStats = state.allCoffees.map(coffee => {
-    const coffeeRatings = state.ratings.filter(r => String(r.kavaId) === String(coffee.id) && r.rating > 0);
+    const rawRatings = state.ratings.filter(r => String(r.kavaId) === String(coffee.id) && Number(r.rating) > 0);
+    
+    // Deduplikace podle času (nejnovější záznam přebije starší)
+    const uniqueMap = new Map();
+    rawRatings.forEach(r => {
+      const uid = String(r.userId);
+      const existing = uniqueMap.get(uid);
+
+      if (!existing) {
+        uniqueMap.set(uid, r);
+      } else {
+        const timeExisting = existing.date ? new Date(existing.date).getTime() : 0;
+        const timeCurrent = r.date ? new Date(r.date).getTime() : 0;
+
+        if (timeCurrent >= timeExisting) {
+          uniqueMap.set(uid, r);
+        }
+      }
+    });
+
+    const uniqueRatings = Array.from(uniqueMap.values());
+
     let avg = 0;
-    if (coffeeRatings.length > 0) {
-      const sum = coffeeRatings.reduce((acc, r) => acc + Number(r.rating), 0);
-      avg = Number((sum / coffeeRatings.length).toFixed(1));
+    if (uniqueRatings.length > 0) {
+      const sum = uniqueRatings.reduce((acc, r) => acc + Number(r.rating), 0);
+      avg = Number((sum / uniqueRatings.length).toFixed(1));
     }
+
     return {
       ...coffee,
-      ratingsList: coffeeRatings,
+      ratingsList: uniqueRatings,
       avgRating: avg,
       roundAvg: Math.round(avg)
     };
   });
 
-  // 2. Řazení: V kávovaru má absolutní přednost, zbytek sestupně podle hodnocení (a pak dle ID)
+  // 2. Řazení: V kávovaru má absolutní přednost, zbytek sestupně podle hodnocení
   coffeesWithStats.sort((a, b) => {
     if (a.aktivni === 1) return -1;
     if (b.aktivni === 1) return 1;
@@ -831,7 +865,7 @@ function renderAdminCoffeeHistory() {
     return b.id - a.id;
   });
 
-  // 3. Vykreslení kompaktních řádků (všechny sbalené)
+  // 3. Vykreslení
   coffeesWithStats.forEach(coffee => {
     const isActive = coffee.aktivni === 1;
     const card = document.createElement("div");
@@ -865,7 +899,6 @@ function renderAdminCoffeeHistory() {
       <div id="detail-${coffee.id}" class="coffee-card-details hidden" style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--card-border);">
         <div style="margin-bottom:6px;">${dateInfo}</div>
 
-        <!-- Parametry chuti -->
         <div style="display:flex; gap:12px; margin-bottom:8px; font-size:0.8rem; background:rgba(0,0,0,0.03); padding:4px 8px; border-radius:6px;">
           <span>Acidita: <b>${coffee.acidita || 3}/5</b></span>
           <span>Intenzita: <b>${coffee.intenzita || 3}/5</b></span>
@@ -876,7 +909,6 @@ function renderAdminCoffeeHistory() {
           Celkově: <b>${coffee.avgRating > 0 ? coffee.avgRating.toFixed(1) : '0.0'}</b> <span class="hearts" style="color:var(--heart-active);">${heartsStr}</span> (${coffee.ratingsList.length} hodnocení)
         </div>
 
-        <!-- Popis kávy s kliknutím pro velkou editaci -->
         <div style="margin: 8px 0; background: #fff; border: 1px solid var(--card-border); border-radius: 8px; padding: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">POPIS A CHUŤOVÝ PROFIL:</span>
@@ -938,14 +970,12 @@ document.getElementById("modal-coffee-save-btn")?.addEventListener("click", asyn
   const c = state.allCoffees.find(x => String(x.id) === String(id));
   if (c) c.info = text;
 
-  // Pokud jde o kávu právě v kávovaru, aktualizujeme i otočnou kartu na hlavní stránce
   if (state.kava && String(state.kava.id) === String(id)) {
     state.kava.info = text;
     localStorage.setItem("zus_cached_kava", JSON.stringify(state.kava));
     renderCoffeeBadge();
   }
 
-  // Aktualizace textu v náhledu v administraci
   const preview = document.getElementById(`info-preview-${id}`);
   if (preview) {
     preview.innerHTML = text !== "" ? text : '<span style="font-style: italic; color: #aaa;">Klikni pro zadání popisu kávy...</span>';
@@ -968,12 +998,15 @@ document.getElementById("modal-coffee-save-btn")?.addEventListener("click", asyn
   }
 });
 
-// Pomocná funkce pro vypsání hlasů káv
 function coffeeRatingsHtml(ratings) {
   if (!ratings || ratings.length === 0) {
     return '<div style="font-size:0.8rem; font-style:italic; color:var(--text-muted);">Nikdo nehodnotil</div>';
   }
-  return ratings.map(r => `
+
+  // Seřadíme abecedně podle jmen kolegů
+  const sorted = [...ratings].sort((a, b) => (a.userName || "").localeCompare(b.userName || ""));
+
+  return sorted.map(r => `
     <div class="rating-user-row" style="display:flex; justify-content:space-between; font-size:0.8rem; padding:2px 0;">
       <span>${r.userName}</span>
       <span class="rating-user-hearts" style="color:var(--heart-active);">${"♥".repeat(r.rating)}${"♡".repeat(5 - r.rating)}</span>
@@ -1064,7 +1097,6 @@ function renderAdminUsers() {
 
   const sortedUsers = [...state.users].sort((a, b) => b.totalDrank - a.totalDrank);
   
-  // Součty pro žebříček
   const totalCount = sortedUsers.length;
   let totalDrankSum = 0;
   let totalPaidSum = 0;
@@ -1078,7 +1110,6 @@ function renderAdminUsers() {
     }
   });
 
-  // Souhrnný řádek pod žebříčkem
   if (leaderBoard && totalCount > 0) {
     leaderBoard.innerHTML += `
       <tr style="border-top: 2px solid var(--card-border); font-weight: 800;">
@@ -1197,5 +1228,5 @@ document.querySelectorAll(".admin-details").forEach(detail => {
 // START APLIKACE
 // ==========================================
 tryInstantAutoLogin();
-restoreAllCachedData(); // Bleskově osadí celou obrazovku včerejšími daty
-loadData();             // Na pozadí potichu ověří novinky ze serveru
+restoreAllCachedData();
+loadData();
