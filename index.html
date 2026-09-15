@@ -284,6 +284,23 @@
         </div>
       </div>
     </div>
+    
+    <!-- MODÁLNÍ OKNO PRO ÚPRAVU INFORMACÍ O KÁVĚ -->
+    <div id="coffee-info-modal" class="modal-overlay hidden">
+      <div class="modal-dialog" style="max-width: 480px; width: 92%;">
+        <h3 id="modal-coffee-name" style="color: var(--primary); margin-bottom: 6px;">Popis kávy</h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Příběh, chuťový profil, acidita, region...</p>
+    
+        <div class="input-group" style="text-align: left;">
+          <textarea id="modal-coffee-textarea" rows="8" style="width: 100%; font-size: 0.95rem; line-height: 1.45; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border); font-family: inherit; resize: vertical;" placeholder="Sem napiš podrobnosti o kávě..."></textarea>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 10px; display: flex; gap: 8px;">
+          <button type="button" id="modal-coffee-cancel-btn" class="btn btn-secondary" style="margin: 0; flex: 1;">Zrušit</button>
+          <button type="button" id="modal-coffee-save-btn" class="btn btn-primary" style="margin: 0; flex: 1;">💾 Uložit text</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ADMIN PANEL -->
     <section id="admin-view" class="hidden content-with-bottom-bar">

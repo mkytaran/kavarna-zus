@@ -874,8 +874,16 @@ function renderAdminCoffeeHistory() {
           Celkově: <b>${coffee.avgRating > 0 ? coffee.avgRating.toFixed(1) : '0.0'}</b> <span class="hearts" style="color:var(--heart-active);">${heartsStr}</span> (${coffee.ratingsList.length} hodnocení)
         </div>
 
-        <textarea id="edit-info-${coffee.id}" rows="2" style="width:100%; font-size:0.8rem; padding:4px; border-radius:6px; border:1px solid var(--card-border);" placeholder="Doplňující informace...">${coffee.info || ""}</textarea>
-        <button class="btn-small" style="margin:6px 0;" onclick="updateCoffeeInfo(${coffee.id})">Uložit text</button>
+        <!-- Popis kávy s kliknutím pro velkou editaci -->
+        <div style="margin: 8px 0; background: #fff; border: 1px solid var(--card-border); border-radius: 8px; padding: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">POPIS A CHUŤOVÝ PROFIL:</span>
+            <button type="button" class="btn-small" style="padding: 3px 8px; font-size: 0.75rem;" onclick="openCoffeeInfoModal(${coffee.id})">✏️ Upravit ve velkém</button>
+          </div>
+          <div id="info-preview-${coffee.id}" onclick="openCoffeeInfoModal(${coffee.id})" style="font-size: 0.85rem; line-height: 1.4; color: var(--text-main); cursor: pointer; min-height: 38px; white-space: pre-wrap; word-break: break-word;">
+            ${coffee.info && coffee.info.trim() !== "" ? coffee.info : '<span style="font-style: italic; color: #aaa;">Klikni pro zadání popisu kávy...</span>'}
+          </div>
+        </div>
 
         <div id="votes-${coffee.id}" style="margin:4px 0;">
           ${coffeeRatingsHtml(coffee.ratingsList)}
@@ -889,6 +897,74 @@ function renderAdminCoffeeHistory() {
     container.appendChild(card);
   });
 }
+
+let currentEditingCoffeeId = null;
+
+window.openCoffeeInfoModal = function(id) {
+  const coffee = state.allCoffees.find(c => String(c.id) === String(id));
+  if (!coffee) return;
+
+  currentEditingCoffeeId = id;
+  const modal = document.getElementById("coffee-info-modal");
+  const modalTitle = document.getElementById("modal-coffee-name");
+  const textarea = document.getElementById("modal-coffee-textarea");
+
+  if (modalTitle) modalTitle.textContent = `Popis: ${coffee.nazev}`;
+  if (textarea) {
+    textarea.value = coffee.info || "";
+    setTimeout(() => textarea.focus(), 50);
+  }
+
+  modal?.classList.remove("hidden");
+};
+
+function closeCoffeeInfoModal() {
+  currentEditingCoffeeId = null;
+  document.getElementById("coffee-info-modal")?.classList.add("hidden");
+}
+
+document.getElementById("modal-coffee-cancel-btn")?.addEventListener("click", closeCoffeeInfoModal);
+
+document.getElementById("modal-coffee-save-btn")?.addEventListener("click", async () => {
+  if (!currentEditingCoffeeId) return;
+
+  const saveBtn = document.getElementById("modal-coffee-save-btn");
+  const textarea = document.getElementById("modal-coffee-textarea");
+  const text = textarea ? textarea.value.trim() : "";
+  const id = currentEditingCoffeeId;
+
+  const c = state.allCoffees.find(x => String(x.id) === String(id));
+  if (c) c.info = text;
+
+  // Pokud jde o kávu právě v kávovaru, aktualizujeme i otočnou kartu na hlavní stránce
+  if (state.kava && String(state.kava.id) === String(id)) {
+    state.kava.info = text;
+    localStorage.setItem("zus_cached_kava", JSON.stringify(state.kava));
+    renderCoffeeBadge();
+  }
+
+  // Aktualizace textu v náhledu v administraci
+  const preview = document.getElementById(`info-preview-${id}`);
+  if (preview) {
+    preview.innerHTML = text !== "" ? text : '<span style="font-style: italic; color: #aaa;">Klikni pro zadání popisu kávy...</span>';
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Ukládám...";
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "updateCoffeeInfo", id: id, info: text })
+    });
+  } catch (err) {
+    console.error("Chyba při ukládání textu:", err);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "💾 Uložit text";
+    closeCoffeeInfoModal();
+  }
+});
 
 // Pomocná funkce pro vypsání hlasů káv
 function coffeeRatingsHtml(ratings) {
