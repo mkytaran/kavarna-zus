@@ -432,15 +432,17 @@ function renderCoffeeBadge() {
       : "Zatím nebyly přidány žádné podrobnosti k této kávě.";
   }
 
-  // Zobrazení kolikátý pracovní den je v kávovaru (bez víkendů)
-  if (daysEl) {
+  // Zobrazení kolikátý pracovní den je káva v kávovaru
+  const daysBadge = document.getElementById("coffee-days-badge");
+  const daysVal = document.getElementById("coffee-days-val");
+
+  if (daysBadge && daysVal) {
     if (state.kava && state.kava.nasazenoOd) {
       const diffWorkDays = countWorkingDays(state.kava.nasazenoOd, new Date());
-      daysEl.textContent = `${diffWorkDays}. DEN`;
-      daysEl.classList.remove("hidden");
+      daysVal.textContent = `${diffWorkDays}. DEN`;
+      daysBadge.classList.remove("hidden");
     } else {
-      daysEl.textContent = "1. DEN";
-      daysEl.classList.remove("hidden");
+      daysBadge.classList.add("hidden");
     }
   }
 
