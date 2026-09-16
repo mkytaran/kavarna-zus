@@ -174,6 +174,14 @@ async function loadData() {
       const parsed = JSON.parse(savedUser);
       const freshUser = state.users.find(u => String(u.id) === String(parsed.id));
       if (freshUser) {
+        // POJISTKA PROTI RACE CONDITION:
+        // Pokud uživatel v této relaci zrovna kliknul, nepřepíšeme jeho lokální stav
+        // starými daty ze serveru, která ještě nemusí obsahovat právě odeslanou kávu.
+        if (state.currentUser && state.clicksInSession > 0) {
+          freshUser.drank = state.currentUser.drank;
+          freshUser.totalDrank = state.currentUser.totalDrank;
+        }
+
         state.currentUser = freshUser;
         localStorage.setItem("zus_saved_user", JSON.stringify(freshUser));
         updateCupsView();
@@ -189,9 +197,12 @@ async function loadData() {
         .filter(l => String(l.userId) === String(state.currentUser.id) && new Date(l.date) >= todayMidnight)
         .reduce((sum, l) => sum + Number(l.diff || 0), 0);
 
-      state.todayDrank = Math.max(0, serverToday);
-      saveDailyBadge();
-      checkUndoAvailability();
+      // Pokud uživatel právě kliká, nevynucujeme serverový součet
+      if (state.clicksInSession === 0) {
+        state.todayDrank = Math.max(0, serverToday);
+        saveDailyBadge();
+        checkUndoAvailability();
+      }
     }
 
     const adminView = document.getElementById("admin-view");
