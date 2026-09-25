@@ -1167,15 +1167,42 @@ document.getElementById("admin-create-user-btn")?.addEventListener("click", asyn
 });
 
 document.getElementById("admin-save-payment")?.addEventListener("click", async () => {
-  const userId = document.getElementById("payment-user").value;
-  const amount = document.getElementById("payment-amount").value;
-  if (!userId || userId === "NEW" || !amount) { alert("Vyplň kafaře i částku."); return; }
+  const saveBtn = document.getElementById("admin-save-payment");
+  const userSelect = document.getElementById("payment-user");
+  const amountInput = document.getElementById("payment-amount");
+
+  const userId = userSelect.value;
+  const amount = amountInput.value;
+
+  if (!userId || userId === "NEW" || !amount) {
+    alert("Vyplň kafaře i částku.");
+    return;
+  }
+
   const u = state.users.find(x => String(x.id) === userId);
   if (!u) return;
-  document.getElementById("payment-amount").value = "";
 
-  await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "addPayment", userId: userId, amount: amount }) });
-  await loadData(); alert(`Připsáno ${amount} Kč uživateli ${u.name}.`);
+  // Vizuální odezva + ochrana před dvojklikem
+  const originalText = saveBtn.textContent;
+  saveBtn.disabled = true;
+  saveBtn.textContent = "⏳ Připisuji...";
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "addPayment", userId: userId, amount: amount })
+    });
+
+    amountInput.value = "";
+    await loadData();
+    alert(`Připsáno ${amount} Kč uživateli ${u.name}.`);
+  } catch (err) {
+    console.error("Chyba při připisování platby:", err);
+    alert("Došlo k chybě při zápisu platby na server.");
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalText;
+  }
 });
 
 window.adminSaveUser = async function(id) {
