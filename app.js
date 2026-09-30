@@ -1445,7 +1445,6 @@ document.getElementById("tab-btn-week")?.addEventListener("click", () => {
 });
 
 // A. Měsíční zpráva baristy
-// A. Měsíční zpráva baristy
 function renderBaristaReport() {
   const container = document.getElementById("news-barista-report");
   if (!container) return;
@@ -1454,15 +1453,13 @@ function renderBaristaReport() {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
 
-  // Pomocná funkce pro bezpečné parsování data ze Sheets
+  // Pomocná funkce pro bezpečné parsování data (ISO, Google Sheets formát i tečkový český zápis)
   function parseLogDate(val) {
     if (!val) return null;
     if (val instanceof Date) return val;
-    // Pokud je to ISO string nebo standardní datum
     const d = new Date(val);
     if (!isNaN(d.getTime())) return d;
 
-    // Pokud je to český formát např. "1. 10. 2026" nebo "01.10.2026"
     if (typeof val === "string" && val.includes(".")) {
       const parts = val.split(/[. :T]/).filter(Boolean);
       if (parts.length >= 3) {
@@ -1472,7 +1469,7 @@ function renderBaristaReport() {
     return null;
   }
 
-  // 1. Vyfiltrujeme záznamy za aktuální kalendářní měsíc
+  // 1. Záznamy za aktuální kalendářní měsíc
   let monthLogs = (state.logs || []).filter(l => {
     const d = parseLogDate(l.date);
     if (!d) return false;
@@ -1481,9 +1478,8 @@ function renderBaristaReport() {
 
   let reportTitleScope = "za uplynulý měsíc";
 
-  // 2. FALLBACK PRO ZAČÁTEK MĚSÍCE:
-  // Pokud je v aktuálním měsíci vypito méně než 5 káv, vezmeme plovoucích posledních 30 dní
-  const initialSum = monthLogs.reduce((sum, l) => sum + (Number(l.diff || l.count || l.cups || 0)), 0);
+  // 2. Fallback na plovoucích posledních 30 dní, pokud je na začátku měsíce málo záznamů
+  const initialSum = monthLogs.reduce((sum, l) => sum + Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0)), 0);
   if (initialSum < 5) {
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
     monthLogs = (state.logs || []).filter(l => {
@@ -1494,39 +1490,60 @@ function renderBaristaReport() {
     reportTitleScope = "za posledních 30 dní";
   }
 
-  // Celkový součet šálků
-  const totalMonthCups = monthLogs.reduce((sum, l) => {
+  // 3. Součet šálků se zohledněním storna (+1 i -1)
+  let rawTotalCups = monthLogs.reduce((sum, l) => {
     const val = Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0));
-    return sum + (val > 0 ? val : 0);
+    return sum + val;
   }, 0);
 
-  // Krizový den týdne (Po-Pá)
-  const dayNames = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
-  const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+  // 4. KONTROLNÍ POJISTKA: Měsíční počet nesmí překročit celkový historický součet uživatelů
+  const allTimeUsersTotal = (state.users || []).reduce((sum, u) => sum + (Number(u.totalDrank) || 0), 0);
+  const totalMonthCups = Math.max(0, allTimeUsersTotal > 0 ? Math.min(rawTotalCups, allTimeUsersTotal) : rawTotalCups);
+
+  // 5. Nalezení konkrétního dne s největší spotřebou (např. Středa 30. září)
+  const dateMap = {}; // klíč: "YYYY-MM-DD"
+  const monthNamesGenitiv = [
+    "ledna", "února", "března", "dubna", "května", "června",
+    "července", "srpna", "září", "října", "listopadu", "prosince"
+  ];
+  const dayNamesCz = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
 
   monthLogs.forEach(l => {
     const d = parseLogDate(l.date);
     if (d) {
-      const day = d.getDay();
       const val = Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0));
-      if (val > 0) {
-        dayCounts[day] += val;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!dateMap[key]) {
+        dateMap[key] = { count: 0, dateObj: d };
       }
+      dateMap[key].count += val;
     }
   });
 
-  let peakDayIdx = 1;
-  let maxCups = 0;
-  for (let d = 1; d <= 5; d++) {
-    if (dayCounts[d] > maxCups) {
-      maxCups = dayCounts[d];
-      peakDayIdx = d;
+  let peakRecord = null;
+  Object.values(dateMap).forEach(rec => {
+    if (!peakRecord || rec.count > peakRecord.count) {
+      peakRecord = rec;
     }
+  });
+
+  let peakDayFormatted = "nedávno";
+  let maxCups = 0;
+
+  if (peakRecord && peakRecord.count > 0) {
+    maxCups = peakRecord.count;
+    const d = peakRecord.dateObj;
+    const dayName = dayNamesCz[d.getDay()];
+    const dayNum = d.getDate();
+    const monthName = monthNamesGenitiv[d.getMonth()];
+    peakDayFormatted = `${dayName} ${dayNum}. ${monthName}`;
+  } else {
+    peakDayFormatted = "Včerejšek";
   }
 
   const coffeeName = state.kava ? state.kava.nazev : "Výběrová směs";
   const zustatek = state.finance.zustatek !== undefined ? state.finance.zustatek : 0;
-  // cca 9 gramů na 1 dávku espressa
+  // cca 9 gramů na 1 porci
   const kgEstimated = (totalMonthCups * 0.009).toFixed(1);
 
   container.innerHTML = `
@@ -1534,7 +1551,7 @@ function renderBaristaReport() {
     <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou vitalitu. Zde jsou klíčová zjištění interní kofeinové inspekce ${reportTitleScope}:</p>
     
     <div class="news-callout">
-      🔥 <b>Krizový bod týdne:</b> Titul nejdivočejšího dne získává <b>${dayNames[peakDayIdx]}</b> (celkem padlo ${maxCups} šálků). Tehdy se fungovalo výhradně na kofeinový pohon.
+      🔥 <b>Krizový bod týdne:</b> Titul nejdivočejšího dne získává <b>${peakDayFormatted}</b> (celkem padlo ${maxCups} šálků). Tehdy se fungovalo výhradně na kofeinový pohon.
     </div>
 
     <p>Mlýnek v tomto období rozemlel přibližně <b>${kgEstimated} kg zrnek</b> (což odpovídá <b>${totalMonthCups} šálkům</b>). V aktuálním turnusu nás drží při životě káva <i>${coffeeName}</i>.</p>
