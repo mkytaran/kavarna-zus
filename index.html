@@ -249,16 +249,22 @@
         </div>
 
         <!-- Stav pokladny -->
-        <div class="treasury-card">
-          <div class="treasury-header">Stav pokladny</div>
-          <div class="treasury-row">
-            <span>Vybráno: <b id="fin-vybrano">0 Kč</b></span>
-            <span>Náklady: <b id="fin-naklady">0 Kč</b></span>
-            <span>Zůstatek: <b id="fin-rozdil">0 Kč</b></span>
+        <div class="card finance-card" style="margin-top: 14px; padding: 12px 14px; background: #fff; border-radius: 12px; border: 1px solid var(--card-border);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Stav kávové kasy</span>
+            <b id="fin-zustatek" style="font-size: 1.15rem; color: var(--accent);">0 Kč</b>
           </div>
-        </div>
-      </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+            Peníze na další kávu
+          </div>
 
+          <details style="margin-top: 8px; border-top: 1px dashed var(--card-border); padding-top: 6px; font-size: 0.8rem;">
+            <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">Poslední nákupy kávy</summary>
+            <div id="fin-posledni-nakupy" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+              <!-- Dynamicky naplní JS -->
+            </div>
+          </details>
+        </div>
     </section>
 
     <!-- MODÁLNÍ OKNO PRO QR PLATBU -->
@@ -375,6 +381,18 @@
           <button type="button" id="admin-save-payment" class="btn btn-primary" style="width:100%; margin-top:4px;">💳 Připsat kredit</button>
         </div>
       </details>
+
+      <div class="admin-card" style="margin-top: 14px; padding: 12px; background: #fff; border-radius: 10px; border: 1px solid var(--card-border);">
+        <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; color: var(--primary);">🛒 Zapsat nákup / výdaj</h4>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <input type="text" id="expense-title" placeholder="Co jsi koupil (např. Brazílie 1kg, filtry...)" style="padding: 7px 10px; border: 1px solid var(--card-border); border-radius: 6px;">
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="expense-amount" placeholder="Cena v Kč" style="width: 110px; padding: 7px 10px; border: 1px solid var(--card-border); border-radius: 6px;">
+            <input type="text" id="expense-note" placeholder="Poznámka (nepovinné)" style="flex: 1; padding: 7px 10px; border: 1px solid var(--card-border); border-radius: 6px;">
+          </div>
+            <button type="button" id="admin-save-expense" class="btn btn-primary" style="padding: 8px;">Zapsat nákup do pokladny</button>
+        </div>
+      </div>
 
       <!-- HISTORIE KÁV -->
       <div class="card" style="margin-bottom: 10px;">

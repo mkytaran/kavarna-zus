@@ -694,13 +694,30 @@ function updateCupsView() {
 }
 
 function renderFinance() {
-  const vybrano = state.finance.vybrano || 0;
-  const naklady = (state.finance.naklady || 0) + (state.finance.doprava || 0);
-  const rozdil = vybrano - naklady;
+  const zustatek = state.finance.zustatek !== undefined 
+    ? state.finance.zustatek 
+    : (state.finance.vybrano || 0) - (state.finance.naklady || 0);
 
-  if (document.getElementById("fin-vybrano")) document.getElementById("fin-vybrano").textContent = `${vybrano} Kč`;
-  if (document.getElementById("fin-naklady")) document.getElementById("fin-naklady").textContent = `${naklady} Kč`;
-  if (document.getElementById("fin-rozdil")) document.getElementById("fin-rozdil").textContent = `${rozdil} Kč`;
+  const zustatekEl = document.getElementById("fin-zustatek");
+  if (zustatekEl) {
+    zustatekEl.textContent = `${zustatek > 0 ? "+" : ""}${zustatek} Kč`;
+    zustatekEl.style.color = zustatek >= 0 ? "var(--accent)" : "#d9534f";
+  }
+
+  const container = document.getElementById("fin-posledni-nakupy");
+  if (container) {
+    const nakupy = state.finance.posledniVydaje || [];
+    if (nakupy.length === 0) {
+      container.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">Zatím nejsou zapsané žádné nákupy.</span>';
+    } else {
+      container.innerHTML = nakupy.map(n => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding: 2px 0;">
+          <span><b>${n.title}</b> <small style="color:var(--text-muted);">(${n.date})</small></span>
+          <b style="color: #c0392b;">-${n.amount} Kč</b>
+        </div>
+      `).join("");
+    }
+  }
 }
 
 // ==========================================
@@ -754,6 +771,45 @@ document.getElementById("qr-download-btn")?.addEventListener("click", async () =
 // ==========================================
 document.getElementById("admin-switch-btn")?.addEventListener("click", openAdminScreen);
 document.getElementById("admin-back-btn")?.addEventListener("click", closeAdminScreen);
+document.getElementById("admin-save-expense")?.addEventListener("click", async () => {
+  const btn = document.getElementById("admin-save-expense");
+  const titleInput = document.getElementById("expense-title");
+  const amountInput = document.getElementById("expense-amount");
+  const noteInput = document.getElementById("expense-note");
+
+  const title = titleInput.value.trim();
+  const amount = Number(amountInput.value);
+  const note = noteInput.value.trim();
+
+  if (!title || !amount || amount <= 0) {
+    alert("Zadej prosím název nákupu a platnou částku v Kč.");
+    return;
+  }
+
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "⏳ Ukládám nákup...";
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "addExpense", title: title, amount: amount, note: note })
+    });
+
+    titleInput.value = "";
+    amountInput.value = "";
+    noteInput.value = "";
+
+    await loadData();
+    alert(`Nákup "${title}" za ${amount} Kč byl zapsán.`);
+  } catch (e) {
+    console.error("Chyba při ukládání nákupu:", e);
+    alert("Chyba při zápisu do pokladny.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+});
 
 function openAdminScreen() {
   localStorage.setItem("zus_current_view", "admin");
