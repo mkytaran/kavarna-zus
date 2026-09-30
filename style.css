@@ -856,7 +856,6 @@ body.card-flipped-active .main-lower-sticky {
   100% { transform: scale(1); }
 }
 
-/* Záložka novin na pravém okraji – písmo směřuje zespoda nahoru */
 /* ==========================================
    ČERNÁ KRONIKA – VZHLED NOVIN & ZÁLOŽKY
    ========================================== */
@@ -864,13 +863,12 @@ body.card-flipped-active .main-lower-sticky {
 /* 1. Útržek novin přilepený přímo k pravému okraji */
 .newspaper-tag {
   position: fixed;
-  right: 0; /* Pevně přilepeno k hraně displeje */
+  right: 0;
   top: 48%;
   transform: translateY(-50%) rotate(-90deg);
   transform-origin: bottom right;
   background: #fbf5e8;
   color: #1a1412;
-  /* Perforovaný levý okraj jako po odtržení z novin */
   border: 1px dashed #7a6a58;
   border-bottom: none;
   border-radius: 4px 0 0 4px;
@@ -900,28 +898,32 @@ body.card-flipped-active .main-lower-sticky {
 .newspaper-tag-icon {
   font-size: 0.95rem;
   display: inline-block;
-  transform: rotate(90deg); /* Narovná ikonu novin do svislé polohy */
+  transform: rotate(90deg);
 }
 
-/* 2. Rozbalený novinový list (širší formát) */
+/* 2. Rozbalený novinový list (širší formát, bezpečně vepsaný do obrazovky) */
 .newspaper-paper {
   background: #fdfaf3 !important;
   color: #1f1a17 !important;
   border: 2px solid #2b1d14 !important;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45) !important;
   font-family: "Georgia", serif;
-  max-width: 580px !important; /* Širší plocha pro čtení */
-  width: 95% !important;
-  padding: 20px 22px !important;
+  max-width: 680px !important;
+  width: 96% !important;
+  max-height: 90dvh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 18px 22px !important;
   border-radius: 3px !important;
   box-sizing: border-box;
 }
 
 .newspaper-header {
+  flex-shrink: 0;
   text-align: center;
   border-bottom: 2px solid #2b1d14;
-  padding-bottom: 8px;
-  margin-bottom: 12px;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .newspaper-subhead {
@@ -955,9 +957,10 @@ body.card-flipped-active .main-lower-sticky {
 }
 
 .newspaper-tabs {
+  flex-shrink: 0;
   display: flex;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   border-bottom: 1px solid #dcd3c1;
   padding-bottom: 8px;
 }
@@ -981,22 +984,26 @@ body.card-flipped-active .main-lower-sticky {
   border-color: #2b1d14;
 }
 
-/* 3. Text novin – skrytý posuvný proužek */
+.newspaper-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 3. Text článku se skrytým posuvníkem */
 .news-article {
   font-size: 0.95rem;
   line-height: 1.55;
   text-align: justify;
-  max-height: 58vh; /* Komfortní výška pro telefony i monitory */
   overflow-y: auto;
   padding-right: 2px;
+  flex: 1 1 auto;
   
-  /* Skrytí posuvníku pro Firefox */
   scrollbar-width: none;
-  /* Skrytí pro IE a Edge */
   -ms-overflow-style: none;
 }
 
-/* Skrytí posuvníku pro Chrome, Safari a Operu */
 .news-article::-webkit-scrollbar {
   display: none;
   width: 0;
@@ -1024,10 +1031,11 @@ body.card-flipped-active .main-lower-sticky {
 }
 
 .newspaper-actions {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 14px;
-  padding-top: 10px;
+  margin-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid #dcd3c1;
 }
