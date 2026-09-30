@@ -857,68 +857,64 @@ body.card-flipped-active .main-lower-sticky {
 }
 
 /* Záložka novin na pravém okraji – písmo směřuje zespoda nahoru */
+/* ==========================================
+   ČERNÁ KRONIKA – VZHLED NOVIN & ZÁLOŽKY
+   ========================================== */
+
+/* 1. Útržek novin přilepený přímo k pravému okraji */
 .newspaper-tag {
   position: fixed;
-  right: -24px;
-  top: 45%;
-  transform: translateY(-50%) rotate(-90deg); /* ZMĚNA: záporný úhel otočí text zespoda nahoru */
-  transform-origin: center center;
-  background: #f4ecd8;
-  color: #2b1810;
-  border: 1px solid #c9b99a;
+  right: 0; /* Pevně přilepeno k hraně displeje */
+  top: 48%;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: bottom right;
+  background: #fbf5e8;
+  color: #1a1412;
+  /* Perforovaný levý okraj jako po odtržení z novin */
+  border: 1px dashed #7a6a58;
   border-bottom: none;
-  border-radius: 6px 6px 0 0;
-  padding: 5px 12px;
+  border-radius: 4px 0 0 4px;
+  padding: 6px 14px 7px 10px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  gap: 7px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  box-shadow: -3px 3px 10px rgba(0, 0, 0, 0.22);
   cursor: pointer;
   z-index: 100;
-  transition: right 0.2s ease, background 0.2s ease;
+  transition: transform 0.2s ease, background 0.2s ease;
   font-family: "Courier New", Courier, monospace;
+  text-transform: uppercase;
   user-select: none;
   -webkit-user-select: none;
-  animation: slideInTag 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes slideInTag {
-  from {
-    right: -60px;
-    opacity: 0;
-  }
-  to {
-    right: -24px;
-    opacity: 1;
-  }
 }
 
 .newspaper-tag:hover,
 .newspaper-tag:active {
-  right: -16px;
-  background: #fff9ea;
+  background: #fffdf7;
+  transform: translateY(-50%) rotate(-90deg) translateY(-3px);
 }
 
 .newspaper-tag-icon {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   display: inline-block;
-  transform: rotate(90deg); /* narovná ikonu novin do správného směru */
+  transform: rotate(90deg); /* Narovná ikonu novin do svislé polohy */
 }
 
-/* Modal novinového stylu */
+/* 2. Rozbalený novinový list (širší formát) */
 .newspaper-paper {
   background: #fdfaf3 !important;
   color: #1f1a17 !important;
   border: 2px solid #2b1d14 !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45) !important;
   font-family: "Georgia", serif;
-  max-width: 440px;
-  width: 90%;
-  padding: 16px 18px;
-  border-radius: 4px !important;
+  max-width: 580px !important; /* Širší plocha pro čtení */
+  width: 95% !important;
+  padding: 20px 22px !important;
+  border-radius: 3px !important;
+  box-sizing: border-box;
 }
 
 .newspaper-header {
@@ -927,87 +923,111 @@ body.card-flipped-active .main-lower-sticky {
   padding-bottom: 8px;
   margin-bottom: 12px;
 }
+
 .newspaper-subhead {
-  font-size: 0.62rem;
-  letter-spacing: 1px;
-  font-family: sans-serif;
-  font-weight: 700;
-  color: #6e5d53;
-  margin-bottom: 2px;
+  font-size: 0.65rem;
+  letter-spacing: 1.2px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 800;
+  color: #5a4b41;
+  margin-bottom: 3px;
 }
+
 .newspaper-title {
-  margin: 0;
-  font-size: 1.85rem;
+  margin: 2px 0 4px 0;
+  font-size: 2.2rem;
   font-weight: 900;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   font-family: "Times New Roman", Times, serif;
 }
+
 .newspaper-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 0.68rem;
-  font-family: sans-serif;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 700;
   border-top: 1px solid #443226;
   border-bottom: 1px solid #443226;
-  padding: 2px 0;
-  margin-top: 4px;
+  padding: 3px 2px;
+  margin-top: 6px;
 }
 
 .newspaper-tabs {
   display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 14px;
   border-bottom: 1px solid #dcd3c1;
-  padding-bottom: 6px;
+  padding-bottom: 8px;
 }
+
 .news-tab-btn {
   flex: 1;
-  background: none;
-  border: 1px solid #c4b69c;
-  padding: 6px;
-  font-size: 0.78rem;
+  background: transparent;
+  border: 1px solid #b8a88e;
+  padding: 8px 10px;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   border-radius: 4px;
-  font-family: sans-serif;
+  font-family: inherit;
+  transition: all 0.2s;
 }
+
 .news-tab-btn.active {
   background: #2b1d14;
   color: #fff;
   border-color: #2b1d14;
 }
 
+/* 3. Text novin – skrytý posuvný proužek */
 .news-article {
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.95rem;
+  line-height: 1.55;
   text-align: justify;
-  max-height: 340px;
+  max-height: 58vh; /* Komfortní výška pro telefony i monitory */
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 2px;
+  
+  /* Skrytí posuvníku pro Firefox */
+  scrollbar-width: none;
+  /* Skrytí pro IE a Edge */
+  -ms-overflow-style: none;
 }
+
+/* Skrytí posuvníku pro Chrome, Safari a Operu */
+.news-article::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .news-article h3 {
-  margin: 6px 0 4px 0;
-  font-size: 1.05rem;
+  margin: 6px 0 8px 0;
+  font-size: 1.25rem;
   font-family: "Times New Roman", Times, serif;
   text-align: left;
 }
+
 .news-article p {
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
 }
+
 .news-callout {
   background: #f1ebd9;
   border-left: 3px solid #2b1d14;
-  padding: 6px 10px;
-  margin: 8px 0;
+  padding: 8px 12px;
+  margin: 10px 0;
   font-style: italic;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
 }
+
 .newspaper-actions {
   display: flex;
   justify-content: space-between;
+  gap: 10px;
   margin-top: 14px;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 1px solid #dcd3c1;
 }
