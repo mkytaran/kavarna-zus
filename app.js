@@ -1453,7 +1453,7 @@ function renderBaristaReport() {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
 
-  // Pomocná funkce pro bezpečné parsování data (ISO, Google Sheets formát i tečkový český zápis)
+  // Pomocná funkce pro bezpečné parsování data
   function parseLogDate(val) {
     if (!val) return null;
     if (val instanceof Date) return val;
@@ -1478,7 +1478,7 @@ function renderBaristaReport() {
 
   let reportTitleScope = "za uplynulý měsíc";
 
-  // 2. Fallback na plovoucích posledních 30 dní, pokud je na začátku měsíce málo záznamů
+  // 2. Fallback na plovoucích 30 dní při začátku měsíce
   const initialSum = monthLogs.reduce((sum, l) => sum + Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0)), 0);
   if (initialSum < 5) {
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
@@ -1496,12 +1496,12 @@ function renderBaristaReport() {
     return sum + val;
   }, 0);
 
-  // 4. KONTROLNÍ POJISTKA: Měsíční počet nesmí překročit celkový historický součet uživatelů
+  // 4. Pojistka: strop podle celkového součtu káv všech uživatelů
   const allTimeUsersTotal = (state.users || []).reduce((sum, u) => sum + (Number(u.totalDrank) || 0), 0);
   const totalMonthCups = Math.max(0, allTimeUsersTotal > 0 ? Math.min(rawTotalCups, allTimeUsersTotal) : rawTotalCups);
 
-  // 5. Nalezení konkrétního dne s největší spotřebou (např. Středa 30. září)
-  const dateMap = {}; // klíč: "YYYY-MM-DD"
+  // 5. Nalezení nejdivočejšího dne s plným datem (např. Středa 30. září)
+  const dateMap = {};
   const monthNamesGenitiv = [
     "ledna", "února", "března", "dubna", "května", "června",
     "července", "srpna", "září", "října", "listopadu", "prosince"
@@ -1543,18 +1543,21 @@ function renderBaristaReport() {
 
   const coffeeName = state.kava ? state.kava.nazev : "Výběrová směs";
   const zustatek = state.finance.zustatek !== undefined ? state.finance.zustatek : 0;
-  // cca 9 gramů na 1 porci
-  const kgEstimated = (totalMonthCups * 0.009).toFixed(1);
 
   container.innerHTML = `
     <h3>Přežili jsme další měsíc bez výpadku proudu!</h3>
-    <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou vitalitu. Zde jsou klíčová zjištění interní kofeinové inspekce ${reportTitleScope}:</p>
+    <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou kofeinovou vytrvalost. Zde jsou klíčová zjištění interní inspekce ${reportTitleScope}:</p>
     
-    <div class="news-callout">
-      🔥 <b>Krizový bod týdne:</b> Titul nejdivočejšího dne získává <b>${peakDayFormatted}</b> (celkem padlo ${maxCups} šálků). Tehdy se fungovalo výhradně na kofeinový pohon.
+    <div class="news-callout" style="text-align: center; padding: 12px 10px;">
+      ⚡ <b>MIMOŘÁDNÁ KÁVOVÁ ZPRÁVA</b> ⚡<br>
+      Během tohoto období padlo neuvěřitelných <b style="font-size: 1.15rem; color: #2b1810;">${totalMonthCups} šálků kávy</b>! <br> Škola běžela naplno a bez zaváhání.
     </div>
 
-    <p>Mlýnek v tomto období rozemlel přibližně <b>${kgEstimated} kg zrnek</b> (což odpovídá <b>${totalMonthCups} šálkům</b>). V aktuálním turnusu nás drží při životě káva <i>${coffeeName}</i>.</p>
+    <div class="news-callout">
+      🔥 <b>Krizový bod týdne:</b> Titul absolutně nejdivočejšího dne získává <b>${peakDayFormatted}</b>, kdy padlo rekordních <b>${maxCups} káv</b>. Tehdy se fungovalo výhradně na kofeinový pohon.
+    </div>
+
+    <p>V aktuálním turnusu nás drží při životě káva <i>${coffeeName}</i>.</p>
     
     <p><b>Ekonomika fondu:</b> Kávová pokladna hlásí <b>${zustatek >= 0 ? "+" : ""}${zustatek} Kč</b>. Insolvenční správce tedy zatím zůstává před dveřmi kuchyňky a nákup dalšího pytle je plně kryt!</p>
   `;
