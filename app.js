@@ -118,11 +118,13 @@ function restoreAllCachedData() {
     const cachedRatings = localStorage.getItem("zus_cached_ratings");
     const cachedFinance = localStorage.getItem("zus_cached_finance");
     const cachedUsers = localStorage.getItem("zus_cached_users");
+    const cachedLogs = localStorage.getItem("zus_cached_logs");
 
     if (cachedKava) state.kava = JSON.parse(cachedKava);
     if (cachedRatings) state.ratings = JSON.parse(cachedRatings);
     if (cachedFinance) state.finance = JSON.parse(cachedFinance);
     if (cachedUsers) state.users = JSON.parse(cachedUsers);
+    if (cachedLogs) state.logs = JSON.parse(cachedLogs);
 
     renderCoffeeBadge();
     renderFinance();
@@ -134,6 +136,10 @@ function restoreAllCachedData() {
         state.currentUser = freshUser;
         updateCupsView();
       }
+    }
+
+    if (state.currentUser && state.logs.length > 0) {
+      document.getElementById("coffee-newspaper-tag")?.classList.remove("hidden");
     }
   } catch (e) {
     console.warn("Chyba čtení lokální mezipaměti:", e);
@@ -159,6 +165,7 @@ async function loadData() {
     localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
     localStorage.setItem("zus_cached_finance", JSON.stringify(state.finance));
     localStorage.setItem("zus_cached_users", JSON.stringify(state.users));
+    localStorage.setItem("zus_cached_logs", JSON.stringify(state.logs));
 
     renderCoffeeBadge();
     renderFinance();
@@ -174,9 +181,6 @@ async function loadData() {
       const parsed = JSON.parse(savedUser);
       const freshUser = state.users.find(u => String(u.id) === String(parsed.id));
       if (freshUser) {
-        // POJISTKA PROTI RACE CONDITION:
-        // Pokud uživatel v této relaci zrovna kliknul, nepřepíšeme jeho lokální stav
-        // starými daty ze serveru, která ještě nemusí obsahovat právě odeslanou kávu.
         if (state.currentUser && state.clicksInSession > 0) {
           freshUser.drank = state.currentUser.drank;
           freshUser.totalDrank = state.currentUser.totalDrank;
@@ -197,12 +201,16 @@ async function loadData() {
         .filter(l => String(l.userId) === String(state.currentUser.id) && new Date(l.date) >= todayMidnight)
         .reduce((sum, l) => sum + Number(l.diff || 0), 0);
 
-      // Pokud uživatel právě kliká, nevynucujeme serverový součet
       if (state.clicksInSession === 0) {
         state.todayDrank = Math.max(0, serverToday);
         saveDailyBadge();
         checkUndoAvailability();
       }
+    }
+
+    // Proužek Černé kroniky se zobrazí teprve s načtenými daty
+    if (state.currentUser) {
+      document.getElementById("coffee-newspaper-tag")?.classList.remove("hidden");
     }
 
     const adminView = document.getElementById("admin-view");
@@ -242,6 +250,10 @@ function showMainScreen(user) {
   updateCupsView();
   initRating();
   syncDailyBadge();
+
+  if (state.logs && state.logs.length > 0) {
+    document.getElementById("coffee-newspaper-tag")?.classList.remove("hidden");
+  }
 
   if (user.role === "admin" && localStorage.getItem("zus_current_view") === "admin") {
     openAdminScreen();
@@ -358,6 +370,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   if (adminBtn) adminBtn.classList.add("hidden");
   if (backBtn) backBtn.classList.add("hidden");
 
+  document.getElementById("coffee-newspaper-tag")?.classList.add("hidden");
   document.getElementById("undo-btn").classList.add("hidden");
   document.getElementById("main-view").classList.add("hidden");
   document.getElementById("admin-view").classList.add("hidden");
@@ -423,7 +436,6 @@ function renderCoffeeBadge() {
       : "Zatím nebyly přidány žádné podrobnosti k této kávě.";
   }
 
-  // Zobrazení dne bez ikony
   const daysBadge = document.getElementById("coffee-days-badge");
   const daysVal = document.getElementById("coffee-days-val");
 
@@ -437,7 +449,6 @@ function renderCoffeeBadge() {
     }
   }
 
-  // Výpočet celkového průměru hodnocení aktuální kávy (deduplikace podle data)
   const avgEl = document.getElementById("badge-rating-avg");
   const countEl = document.getElementById("badge-rating-count");
   if (avgEl && countEl) {
@@ -884,11 +895,9 @@ function renderAdminCoffeeHistory() {
   if (!container) return;
   container.innerHTML = "";
 
-  // 1. Spočítáme průměrné hodnocení a počet hlasů s filtrací podle data
   const coffeesWithStats = state.allCoffees.map(coffee => {
     const rawRatings = state.ratings.filter(r => String(r.kavaId) === String(coffee.id) && Number(r.rating) > 0);
     
-    // Deduplikace podle času (nejnovější záznam přebije starší)
     const uniqueMap = new Map();
     rawRatings.forEach(r => {
       const uid = String(r.userId);
@@ -922,7 +931,6 @@ function renderAdminCoffeeHistory() {
     };
   });
 
-  // 2. Řazení: V kávovaru má absolutní přednost, zbytek sestupně podle hodnocení
   coffeesWithStats.sort((a, b) => {
     if (a.aktivni === 1) return -1;
     if (b.aktivni === 1) return 1;
@@ -932,7 +940,6 @@ function renderAdminCoffeeHistory() {
     return b.id - a.id;
   });
 
-  // 3. Vykreslení
   coffeesWithStats.forEach(coffee => {
     const isActive = coffee.aktivni === 1;
     const card = document.createElement("div");
@@ -1070,7 +1077,6 @@ function coffeeRatingsHtml(ratings) {
     return '<div style="font-size:0.8rem; font-style:italic; color:var(--text-muted);">Nikdo nehodnotil</div>';
   }
 
-  // Seřadíme abecedně podle jmen kolegů
   const sorted = [...ratings].sort((a, b) => (a.userName || "").localeCompare(b.userName || ""));
 
   return sorted.map(r => `
@@ -1238,7 +1244,6 @@ document.getElementById("admin-save-payment")?.addEventListener("click", async (
   const u = state.users.find(x => String(x.id) === userId);
   if (!u) return;
 
-  // Vizuální odezva + ochrana před dvojklikem
   const originalText = saveBtn.textContent;
   saveBtn.disabled = true;
   saveBtn.textContent = "⏳ Připisuji...";
@@ -1287,35 +1292,267 @@ function getWorkingDaysInMonth() {
 }
 
 function renderUsageStats() {
-  const weekly = document.getElementById("admin-weekly-list"); const monthly = document.getElementById("admin-monthly-list");
+  const weekly = document.getElementById("admin-weekly-list");
+  const monthly = document.getElementById("admin-monthly-list");
   if (!weekly || !monthly) return;
-  weekly.innerHTML = ""; monthly.innerHTML = "";
+  weekly.innerHTML = "";
+  monthly.innerHTML = "";
 
   const now = new Date();
   const currentDay = now.getDay() === 0 ? 7 : now.getDay();
-  const monday = new Date(now); monday.setDate(now.getDate() - currentDay + 1); monday.setHours(0,0,0,0);
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - currentDay + 1);
+  monday.setHours(0, 0, 0, 0);
+
   const currentMonthStr = now.getFullYear() + "-" + now.getMonth();
   const workDays = getWorkingDaysInMonth();
-  const wStats = {}; const mStats = {};
+  const wStats = {};
+  const mStats = {};
   
-  state.users.forEach(u => { wStats[u.id] = [0,0,0,0,0]; mStats[u.id] = 0; });
+  const dailyTotals = [0, 0, 0, 0, 0];
+
+  state.users.forEach(u => {
+    wStats[u.id] = [0, 0, 0, 0, 0];
+    mStats[u.id] = 0;
+  });
+
   state.logs.forEach(l => {
     const d = new Date(l.date);
-    if (d >= monday) { const idx = d.getDay() === 0 ? 6 : d.getDay() - 1; if (idx <= 4 && wStats[l.userId]) wStats[l.userId][idx] += l.diff; }
-    if (d.getFullYear() + "-" + d.getMonth() === currentMonthStr && mStats[l.userId] !== undefined) mStats[l.userId] += l.diff;
+    if (d >= monday) {
+      const idx = d.getDay() === 0 ? 6 : d.getDay() - 1;
+      if (idx <= 4 && wStats[l.userId]) {
+        wStats[l.userId][idx] += Number(l.diff || 0);
+        dailyTotals[idx] += Number(l.diff || 0);
+      }
+    }
+    if (d.getFullYear() + "-" + d.getMonth() === currentMonthStr && mStats[l.userId] !== undefined) {
+      mStats[l.userId] += Number(l.diff || 0);
+    }
   });
 
   const cupSVG = `<svg viewBox="0 0 24 24"><path d="M2 19h18v2H2zM20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3z"/></svg>`;
+  
   state.users.forEach(u => {
     let cupsHtml = "";
-    wStats[u.id].forEach(c => { cupsHtml += `<div class="day-cup-wrapper"><div class="day-cup ${c > 0 ? "drank" : ""}">${cupSVG}</div>${c > 1 ? `<div class="multi-cup-badge">${c}</div>` : ""}</div>`; });
-    weekly.innerHTML += `<div class="stat-row"><div class="stat-name">${u.name}</div><div class="week-cups">${cupsHtml}</div></div>`;
-    monthly.innerHTML += `<div class="stat-row"><div class="stat-name">${u.name}</div><div class="month-stat">${mStats[u.id]} / ${workDays}</div></div>`;
+    wStats[u.id].forEach(c => {
+      cupsHtml += `
+        <div class="day-cup-wrapper">
+          <div class="day-cup ${c > 0 ? "drank" : ""}">${cupSVG}</div>
+          ${c > 1 ? `<div class="multi-cup-badge">${c}</div>` : ""}
+        </div>
+      `;
+    });
+
+    weekly.innerHTML += `
+      <div class="stat-row">
+        <div class="stat-name">${u.name}</div>
+        <div class="week-cups">${cupsHtml}</div>
+      </div>
+    `;
+
+    monthly.innerHTML += `
+      <div class="stat-row">
+        <div class="stat-name">${u.name}</div>
+        <div class="month-stat">${mStats[u.id]} / ${workDays}</div>
+      </div>
+    `;
   });
+
+  let dailyTotalsHtml = "";
+  dailyTotals.forEach(sum => {
+    dailyTotalsHtml += `
+      <div class="day-cup-wrapper" style="font-weight: 800; font-size: 0.85rem; color: var(--primary); text-align: center; justify-content: center; display: flex; align-items: center;">
+        ${sum > 0 ? sum : "-"}
+      </div>
+    `;
+  });
+
+  const weekSum = dailyTotals.reduce((a, b) => a + b, 0);
+
+  weekly.innerHTML += `
+    <div class="stat-row" style="margin-top: 8px; padding-top: 8px; border-top: 2px solid var(--card-border); font-weight: 800;">
+      <div class="stat-name" style="font-size: 0.85rem; color: var(--text-main);">
+        Celkem (${weekSum})
+      </div>
+      <div class="week-cups">
+        ${dailyTotalsHtml}
+      </div>
+    </div>
+  `;
 }
 
 document.querySelectorAll(".admin-details").forEach(detail => {
   detail.addEventListener("toggle", () => { if (detail.open) { renderUsageStats(); renderAdminUsers(); renderAdminPendingRequests(); } });
+});
+
+// ==========================================
+// 12. ČERNÁ KRONIKA & KUCHYŇSKÉ NOVINY
+// ==========================================
+function openNewspaperModal() {
+  const modal = document.getElementById("newspaper-modal");
+  if (!modal) return;
+
+  const now = new Date();
+  const monthNames = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
+  const dateEl = document.getElementById("news-date");
+  if (dateEl) dateEl.textContent = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+
+  const copyBtn = document.getElementById("news-copy-btn");
+  if (copyBtn) {
+    if (state.currentUser && state.currentUser.role === "admin") {
+      copyBtn.classList.remove("hidden");
+    } else {
+      copyBtn.classList.add("hidden");
+    }
+  }
+
+  renderBaristaReport();
+  renderWeeklyLeaderboard();
+
+  modal.classList.remove("hidden");
+}
+
+function closeNewspaperModal() {
+  document.getElementById("newspaper-modal")?.classList.add("hidden");
+}
+
+document.getElementById("coffee-newspaper-tag")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  e.preventDefault();
+  openNewspaperModal();
+});
+
+document.getElementById("news-close-btn")?.addEventListener("click", closeNewspaperModal);
+
+document.getElementById("newspaper-modal")?.addEventListener("click", (e) => {
+  if (e.target.id === "newspaper-modal") {
+    closeNewspaperModal();
+  }
+});
+
+document.getElementById("tab-btn-month")?.addEventListener("click", () => {
+  document.getElementById("tab-btn-month").classList.add("active");
+  document.getElementById("tab-btn-week").classList.remove("active");
+  document.getElementById("news-section-month").classList.remove("hidden");
+  document.getElementById("news-section-week").classList.add("hidden");
+});
+
+document.getElementById("tab-btn-week")?.addEventListener("click", () => {
+  document.getElementById("tab-btn-week").classList.add("active");
+  document.getElementById("tab-btn-month").classList.remove("active");
+  document.getElementById("news-section-week").classList.remove("hidden");
+  document.getElementById("news-section-month").classList.add("hidden");
+});
+
+// A. Měsíční zpráva baristy
+function renderBaristaReport() {
+  const container = document.getElementById("news-barista-report");
+  if (!container) return;
+
+  const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${now.getMonth()}`;
+  
+  const monthLogs = (state.logs || []).filter(l => {
+    const d = new Date(l.date);
+    return `${d.getFullYear()}-${d.getMonth()}` === currentMonthStr;
+  });
+  const totalMonthCups = monthLogs.reduce((sum, l) => sum + Number(l.diff || 0), 0);
+
+  const dayNames = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
+  const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+  monthLogs.forEach(l => {
+    const day = new Date(l.date).getDay();
+    dayCounts[day] += Number(l.diff || 0);
+  });
+  
+  let peakDayIdx = 1;
+  let maxCups = 0;
+  for (let d = 1; d <= 5; d++) {
+    if (dayCounts[d] > maxCups) {
+      maxCups = dayCounts[d];
+      peakDayIdx = d;
+    }
+  }
+
+  const coffeeName = state.kava ? state.kava.nazev : "Výběrová směs";
+  const zustatek = state.finance.zustatek !== undefined ? state.finance.zustatek : 0;
+  const kgEstimated = (totalMonthCups * 0.009).toFixed(1);
+
+  container.innerHTML = `
+    <h3>Přežili jsme další měsíc bez výpadku proudu!</h3>
+    <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou vitalitu. Zde jsou klíčová zjištění interní kofeinové inspekce:</p>
+    
+    <div class="news-callout">
+      🔥 <b>Krizový bod týdne:</b> Titul nejdivočejšího dne získává <b>${dayNames[peakDayIdx]}</b> (celkem padlo ${maxCups} šálků). Tehdy se fungovalo výhradně na kofeinový pohon.
+    </div>
+
+    <p>Mlýnek v tomto měsíci rozemlel přibližně <b>${kgEstimated} kg zrnek</b> (což odpovídá <b>${totalMonthCups} šálkům</b>). V aktuálním turnusu nás drží při životě káva <i>${coffeeName}</i>.</p>
+    
+    <p><b>Ekonomika fondu:</b> Kávová pokladna hlásí <b>${zustatek >= 0 ? "+" : ""}${zustatek} Kč</b>. Insolvenční správce tedy zatím zůstává před dveřmi kuchyňky a nákup dalšího pytle je plně kryt!</p>
+  `;
+}
+
+// B. Týdenní žebříček
+function renderWeeklyLeaderboard() {
+  const container = document.getElementById("news-weekly-report");
+  if (!container) return;
+
+  const now = new Date();
+  const currentDay = now.getDay() === 0 ? 7 : now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - currentDay + 1);
+  monday.setHours(0, 0, 0, 0);
+
+  const userScores = {};
+  (state.users || []).forEach(u => userScores[u.id] = { name: u.name, count: 0 });
+
+  (state.logs || []).forEach(l => {
+    if (new Date(l.date) >= monday && userScores[l.userId]) {
+      userScores[l.userId].count += Number(l.diff || 0);
+    }
+  });
+
+  const sorted = Object.values(userScores).sort((a, b) => b.count - a.count);
+  const totalWeek = sorted.reduce((sum, u) => sum + u.count, 0);
+
+  let rowsHtml = "";
+  sorted.forEach((u, idx) => {
+    if (u.count === 0 && idx > 4) return;
+    let medal = `${idx + 1}.`;
+    if (idx === 0 && u.count > 0) medal = "🥇";
+    if (idx === 1 && u.count > 0) medal = "🥈";
+    if (idx === 2 && u.count > 0) medal = "🥉";
+
+    rowsHtml += `
+      <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px dotted #ccc;">
+        <span><b>${medal}</b> ${u.name}</span>
+        <b>${u.count} ☕</b>
+      </div>
+    `;
+  });
+
+  container.innerHTML = `
+    <h3>Týdenní kofeinová hitparáda</h3>
+    <p style="font-size:0.8rem; color:#555;">Kdo tento týden zachraňoval kuchyňku před spánkem:</p>
+    <div style="margin: 8px 0;">${rowsHtml}</div>
+    <div class="news-callout">
+      Celkem tento týden vypito: <b>${totalWeek} káv</b>. Čest poraženým, sláva bdělým!
+    </div>
+  `;
+}
+
+// C. Kopírování pro tisk
+document.getElementById("news-copy-btn")?.addEventListener("click", () => {
+  const isMonth = document.getElementById("tab-btn-month").classList.contains("active");
+  const container = isMonth ? document.getElementById("news-barista-report") : document.getElementById("news-weekly-report");
+  if (!container) return;
+
+  const plainText = container.innerText;
+  navigator.clipboard.writeText(`📰 KUCHYŇSKÁ ČERNÁ KRONIKA\n\n${plainText}\n\nVygenerováno aplikací ZUŠkafe`).then(() => {
+    alert("Zkopírováno do schránky! Můžeš tisknout na nástěnku do kuchyňky.");
+  }).catch(() => {
+    alert("Nepodařilo se automaticky zkopírovat, označ text myší.");
+  });
 });
 
 // ==========================================

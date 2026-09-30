@@ -76,6 +76,12 @@
     <!-- HLAVNÍ OBRAZOVKA -->
     <section id="main-view" class="hidden content-with-bottom-bar flex-main-layout">
       
+      <!-- Záložka novin vykukující z pravého okraje obrazovky (otočená o 90°) -->
+      <div id="coffee-newspaper-tag" class="newspaper-tag hidden" title="Otevřít Černou kroniku kuchyňky">
+        <span class="newspaper-tag-icon">📰</span>
+        <span class="newspaper-tag-text">ČERNÁ KRONIKA</span>
+      </div>
+
       <!-- HORNÍ ČÁST -->
       <div class="main-upper-space">
         
@@ -89,7 +95,7 @@
                   <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
                   <!-- Čistá pilulka bez ikony -->
                   <div id="coffee-days-badge" class="badge-rating-pill hidden">
-                  <span id="coffee-days-val">-.-</span>
+                    <span id="coffee-days-val">-.-</span>
                   </div>
                 </div>
                 <!-- Celkové hodnocení vedle ohnutého rohu -->
@@ -139,7 +145,7 @@
           </div>
         </div>
 
-        <!-- 3. Velký interaktivní šálek -->
+        <!-- 3. Velký interaktivní šálek (bez cizích prvků uvnitř) -->
         <div class="cup-center">
           <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu" style="position: relative;">
             <div id="main-cup-badge" class="multi-cup-badge hidden" style="top: 25px; right: 40px; width: 32px; height: 32px; font-size: 1.1rem; border: 2px solid var(--bg-app); z-index: 10;">1</div>
@@ -265,7 +271,48 @@
             </div>
           </details>
         </div>
+      </div>
     </section>
+
+    <!-- MODÁLNÍ OKNO: ČERNÁ KRONIKA / SBOROVNÍ NOVINY -->
+    <div id="newspaper-modal" class="modal-overlay hidden">
+      <div class="modal-card newspaper-paper">
+        <div class="newspaper-header">
+          <div class="newspaper-subhead">MIMOŘÁDNÉ VYDÁNÍ PRO KUCHYŇKU • NEZÁVISLÝ TISKOVÝ ORGÁN</div>
+          <h2 class="newspaper-title">ČERNÁ KRONIKA</h2>
+          <div class="newspaper-meta">
+            <span id="news-date">Září 2026</span>
+            <span>CENA: 1 VYPITÝ ŠÁLEK</span>
+            <span>ROČNÍK I.</span>
+          </div>
+        </div>
+
+        <!-- Přepínání záložek novin -->
+        <div class="newspaper-tabs">
+          <button type="button" class="news-tab-btn active" id="tab-btn-month">☕ Zpráva baristy</button>
+          <button type="button" class="news-tab-btn" id="tab-btn-week">🏆 Týdenní žebříček</button>
+        </div>
+
+        <!-- Obsah: Zpráva baristy -->
+        <div id="news-section-month" class="newspaper-content">
+          <div id="news-barista-report" class="news-article">
+            <!-- Generováno dynamicky v JS -->
+          </div>
+        </div>
+
+        <!-- Obsah: Týdenní žebříček -->
+        <div id="news-section-week" class="newspaper-content hidden">
+          <div id="news-weekly-report" class="news-article">
+            <!-- Generováno dynamicky v JS -->
+          </div>
+        </div>
+
+        <div class="newspaper-actions">
+          <button type="button" id="news-copy-btn" class="btn btn-secondary btn-small hidden">📋 Kopírovat pro tisk</button>
+          <button type="button" id="news-close-btn" class="btn btn-primary btn-small">Zavřít noviny</button>
+        </div>
+      </div>
+    </div>
 
     <!-- MODÁLNÍ OKNO PRO QR PLATBU -->
     <div id="qr-pay-modal" class="modal-overlay hidden">
@@ -390,7 +437,7 @@
             <input type="number" id="expense-amount" placeholder="Cena v Kč" style="width: 110px; padding: 7px 10px; border: 1px solid var(--card-border); border-radius: 6px;">
             <input type="text" id="expense-note" placeholder="Poznámka (nepovinné)" style="flex: 1; padding: 7px 10px; border: 1px solid var(--card-border); border-radius: 6px;">
           </div>
-            <button type="button" id="admin-save-expense" class="btn btn-primary" style="padding: 8px;">Zapsat nákup do pokladny</button>
+          <button type="button" id="admin-save-expense" class="btn btn-primary" style="padding: 8px;">Zapsat nákup do pokladny</button>
         </div>
       </div>
 

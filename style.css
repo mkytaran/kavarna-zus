@@ -855,3 +855,159 @@ body.card-flipped-active .main-lower-sticky {
   0% { transform: scale(1.08); color: var(--accent); }
   100% { transform: scale(1); }
 }
+
+/* Záložka novin na pravém okraji – písmo směřuje zespoda nahoru */
+.newspaper-tag {
+  position: fixed;
+  right: -24px;
+  top: 45%;
+  transform: translateY(-50%) rotate(-90deg); /* ZMĚNA: záporný úhel otočí text zespoda nahoru */
+  transform-origin: center center;
+  background: #f4ecd8;
+  color: #2b1810;
+  border: 1px solid #c9b99a;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  padding: 5px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  z-index: 100;
+  transition: right 0.2s ease, background 0.2s ease;
+  font-family: "Courier New", Courier, monospace;
+  user-select: none;
+  -webkit-user-select: none;
+  animation: slideInTag 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideInTag {
+  from {
+    right: -60px;
+    opacity: 0;
+  }
+  to {
+    right: -24px;
+    opacity: 1;
+  }
+}
+
+.newspaper-tag:hover,
+.newspaper-tag:active {
+  right: -16px;
+  background: #fff9ea;
+}
+
+.newspaper-tag-icon {
+  font-size: 0.85rem;
+  display: inline-block;
+  transform: rotate(90deg); /* narovná ikonu novin do správného směru */
+}
+
+/* Modal novinového stylu */
+.newspaper-paper {
+  background: #fdfaf3 !important;
+  color: #1f1a17 !important;
+  border: 2px solid #2b1d14 !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+  font-family: "Georgia", serif;
+  max-width: 440px;
+  width: 90%;
+  padding: 16px 18px;
+  border-radius: 4px !important;
+}
+
+.newspaper-header {
+  text-align: center;
+  border-bottom: 2px solid #2b1d14;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.newspaper-subhead {
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  font-family: sans-serif;
+  font-weight: 700;
+  color: #6e5d53;
+  margin-bottom: 2px;
+}
+.newspaper-title {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: "Times New Roman", Times, serif;
+}
+.newspaper-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  font-family: sans-serif;
+  font-weight: 600;
+  border-top: 1px solid #443226;
+  border-bottom: 1px solid #443226;
+  padding: 2px 0;
+  margin-top: 4px;
+}
+
+.newspaper-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #dcd3c1;
+  padding-bottom: 6px;
+}
+.news-tab-btn {
+  flex: 1;
+  background: none;
+  border: 1px solid #c4b69c;
+  padding: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: sans-serif;
+}
+.news-tab-btn.active {
+  background: #2b1d14;
+  color: #fff;
+  border-color: #2b1d14;
+}
+
+.news-article {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  text-align: justify;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.news-article h3 {
+  margin: 6px 0 4px 0;
+  font-size: 1.05rem;
+  font-family: "Times New Roman", Times, serif;
+  text-align: left;
+}
+.news-article p {
+  margin: 0 0 8px 0;
+}
+.news-callout {
+  background: #f1ebd9;
+  border-left: 3px solid #2b1d14;
+  padding: 6px 10px;
+  margin: 8px 0;
+  font-style: italic;
+  font-size: 0.82rem;
+}
+.newspaper-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 1px solid #dcd3c1;
+}
