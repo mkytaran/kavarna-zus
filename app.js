@@ -1445,26 +1445,76 @@ document.getElementById("tab-btn-week")?.addEventListener("click", () => {
 });
 
 // A. Měsíční zpráva baristy
+// A. Měsíční zpráva baristy
 function renderBaristaReport() {
   const container = document.getElementById("news-barista-report");
   if (!container) return;
 
   const now = new Date();
-  const currentMonthStr = `${now.getFullYear()}-${now.getMonth()}`;
-  
-  const monthLogs = (state.logs || []).filter(l => {
-    const d = new Date(l.date);
-    return `${d.getFullYear()}-${d.getMonth()}` === currentMonthStr;
-  });
-  const totalMonthCups = monthLogs.reduce((sum, l) => sum + Number(l.diff || 0), 0);
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
 
+  // Pomocná funkce pro bezpečné parsování data ze Sheets
+  function parseLogDate(val) {
+    if (!val) return null;
+    if (val instanceof Date) return val;
+    // Pokud je to ISO string nebo standardní datum
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) return d;
+
+    // Pokud je to český formát např. "1. 10. 2026" nebo "01.10.2026"
+    if (typeof val === "string" && val.includes(".")) {
+      const parts = val.split(/[. :T]/).filter(Boolean);
+      if (parts.length >= 3) {
+        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      }
+    }
+    return null;
+  }
+
+  // 1. Vyfiltrujeme záznamy za aktuální kalendářní měsíc
+  let monthLogs = (state.logs || []).filter(l => {
+    const d = parseLogDate(l.date);
+    if (!d) return false;
+    return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+  });
+
+  let reportTitleScope = "za uplynulý měsíc";
+
+  // 2. FALLBACK PRO ZAČÁTEK MĚSÍCE:
+  // Pokud je v aktuálním měsíci vypito méně než 5 káv, vezmeme plovoucích posledních 30 dní
+  const initialSum = monthLogs.reduce((sum, l) => sum + (Number(l.diff || l.count || l.cups || 0)), 0);
+  if (initialSum < 5) {
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+    monthLogs = (state.logs || []).filter(l => {
+      const d = parseLogDate(l.date);
+      if (!d) return false;
+      return d >= thirtyDaysAgo;
+    });
+    reportTitleScope = "za posledních 30 dní";
+  }
+
+  // Celkový součet šálků
+  const totalMonthCups = monthLogs.reduce((sum, l) => {
+    const val = Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0));
+    return sum + (val > 0 ? val : 0);
+  }, 0);
+
+  // Krizový den týdne (Po-Pá)
   const dayNames = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
   const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+
   monthLogs.forEach(l => {
-    const day = new Date(l.date).getDay();
-    dayCounts[day] += Number(l.diff || 0);
+    const d = parseLogDate(l.date);
+    if (d) {
+      const day = d.getDay();
+      const val = Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0));
+      if (val > 0) {
+        dayCounts[day] += val;
+      }
+    }
   });
-  
+
   let peakDayIdx = 1;
   let maxCups = 0;
   for (let d = 1; d <= 5; d++) {
@@ -1476,17 +1526,18 @@ function renderBaristaReport() {
 
   const coffeeName = state.kava ? state.kava.nazev : "Výběrová směs";
   const zustatek = state.finance.zustatek !== undefined ? state.finance.zustatek : 0;
+  // cca 9 gramů na 1 dávku espressa
   const kgEstimated = (totalMonthCups * 0.009).toFixed(1);
 
   container.innerHTML = `
     <h3>Přežili jsme další měsíc bez výpadku proudu!</h3>
-    <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou vitalitu. Zde jsou klíčová zjištění interní kofeinové inspekce:</p>
+    <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou vitalitu. Zde jsou klíčová zjištění interní kofeinové inspekce ${reportTitleScope}:</p>
     
     <div class="news-callout">
       🔥 <b>Krizový bod týdne:</b> Titul nejdivočejšího dne získává <b>${dayNames[peakDayIdx]}</b> (celkem padlo ${maxCups} šálků). Tehdy se fungovalo výhradně na kofeinový pohon.
     </div>
 
-    <p>Mlýnek v tomto měsíci rozemlel přibližně <b>${kgEstimated} kg zrnek</b> (což odpovídá <b>${totalMonthCups} šálkům</b>). V aktuálním turnusu nás drží při životě káva <i>${coffeeName}</i>.</p>
+    <p>Mlýnek v tomto období rozemlel přibližně <b>${kgEstimated} kg zrnek</b> (což odpovídá <b>${totalMonthCups} šálkům</b>). V aktuálním turnusu nás drží při životě káva <i>${coffeeName}</i>.</p>
     
     <p><b>Ekonomika fondu:</b> Kávová pokladna hlásí <b>${zustatek >= 0 ? "+" : ""}${zustatek} Kč</b>. Insolvenční správce tedy zatím zůstává před dveřmi kuchyňky a nákup dalšího pytle je plně kryt!</p>
   `;
