@@ -1406,7 +1406,7 @@ function openNewspaperModal() {
     }
   }
 
-  Report();
+  renderBaristaReport();
   renderWeeklyLeaderboard();
 
   modal.classList.remove("hidden");
