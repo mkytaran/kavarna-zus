@@ -860,45 +860,84 @@ body.card-flipped-active .main-lower-sticky {
    ČERNÁ KRONIKA – VZHLED NOVIN & ZÁLOŽKY
    ========================================== */
 
-/* 1. Útržek novin přilepený přímo k pravému okraji */
+/* ==========================================
+   ČERNÁ KRONIKA – AUTENTICKÝ ÚTRŽEK NOVIN
+   ========================================== */
+
 .newspaper-tag {
   position: fixed;
   right: 0;
-  top: 48%;
+  /* Zvednuto do horní části displeje mimo šálky a předplatné */
+  top: 36%;
   transform: translateY(-50%) rotate(-90deg);
   transform-origin: bottom right;
-  background: #fbf5e8;
-  color: #1a1412;
-  border: 1px dashed #7a6a58;
-  border-bottom: none;
-  border-radius: 4px 0 0 4px;
-  padding: 6px 14px 7px 10px;
+
+  /* Novinový zažloutlý papír s jemnou strukturou */
+  background: #f4edd9;
+  color: #1a120c;
+
+  /* Zoubkovaný perforovaný okraj vlevo + dvojitá novinová linka nahoře a dole */
+  border-top: 2px solid #2b1810;
+  border-left: 2px dashed #6b584a;
+  border-bottom: none; /* Hladce sedí k hraně displeje */
+  border-right: 2px dashed #6b584a;
+  border-radius: 2px 0 0 2px;
+
+  padding: 4px 12px 5px 8px;
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  box-shadow: -3px 3px 10px rgba(0, 0, 0, 0.22);
-  cursor: pointer;
-  z-index: 100;
-  transition: transform 0.2s ease, background 0.2s ease;
-  font-family: "Courier New", Courier, monospace;
-  text-transform: uppercase;
+  gap: 8px;
+
+  /* Typografie skutečných novin */
+  font-family: "Georgia", "Times New Roman", serif;
+  letter-spacing: 1px;
   user-select: none;
   -webkit-user-select: none;
+  cursor: pointer;
+  z-index: 90;
+
+  /* Stín jako skutečný odstávající papír */
+  box-shadow: -4px 3px 12px rgba(43, 24, 16, 0.28);
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .newspaper-tag:hover,
 .newspaper-tag:active {
-  background: #fffdf7;
+  background: #fbf7ec;
   transform: translateY(-50%) rotate(-90deg) translateY(-3px);
 }
 
+/* Ikona novin narovnaná kolmo k textu */
 .newspaper-tag-icon {
   font-size: 0.95rem;
   display: inline-block;
   transform: rotate(90deg);
+  filter: sepia(0.5) contrast(1.2);
+}
+
+/* Text záložky stylizovaný jako novinový štítek */
+.newspaper-tag-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.newspaper-tag-main {
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  color: #24140a;
+}
+
+.newspaper-tag-sub {
+  font-size: 0.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #7a6657;
+  font-weight: 700;
+  margin-top: 1px;
 }
 
 /* 2. Rozbalený novinový list (širší formát, bezpečně vepsaný do obrazovky) */

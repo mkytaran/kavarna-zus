@@ -1386,7 +1386,7 @@ document.querySelectorAll(".admin-details").forEach(detail => {
 });
 
 // ==========================================
-// 12. ČERNÁ KRONIKA & KUCHYŇSKÉ NOVINY
+// 12. ČERNÁ KÁVA & KUCHYŇSKÉ NOVINY
 // ==========================================
 function openNewspaperModal() {
   const modal = document.getElementById("newspaper-modal");
@@ -1619,7 +1619,7 @@ document.getElementById("news-copy-btn")?.addEventListener("click", () => {
   if (!container) return;
 
   const plainText = container.innerText;
-  navigator.clipboard.writeText(`📰 KUCHYŇSKÁ ČERNÁ KRONIKA\n\n${plainText}\n\nVygenerováno aplikací ZUŠkafe`).then(() => {
+  navigator.clipboard.writeText(`📰 KUCHYŇSKÁ ČERNÁ KÁVA\n\n${plainText}\n\nVygenerováno aplikací ZUŠkafe`).then(() => {
     alert("Zkopírováno do schránky! Můžeš tisknout na nástěnku do kuchyňky.");
   }).catch(() => {
     alert("Nepodařilo se automaticky zkopírovat, označ text myší.");
