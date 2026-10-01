@@ -1078,3 +1078,7 @@ body.card-flipped-active .main-lower-sticky {
   padding-top: 8px;
   border-top: 1px solid #dcd3c1;
 }
+
+.newspaper-tag * {
+  pointer-events: none;
+}
