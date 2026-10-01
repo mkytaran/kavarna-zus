@@ -1450,6 +1450,7 @@ function renderBaristaReport() {
   if (!container) return;
 
   const now = new Date();
+  // Posledních 30 dní jako výchozí stav
   const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
 
   function parseLogDate(val) {
@@ -1467,24 +1468,25 @@ function renderBaristaReport() {
     return null;
   }
 
-  // 1. Záznamy za posledních 30 dní
-  const monthLogs = (state.logs || []).filter(l => {
+  // 1. Záznamy rovnou za posledních 30 dní
+  let monthLogs = (state.logs || []).filter(l => {
     const d = parseLogDate(l.date);
     if (!d) return false;
     return d >= thirtyDaysAgo;
   });
 
-  // 2. Součet káv se zohledněním storna
+  let reportTitleScope = "za posledních 30 dní";
+
+  // Součet šálků se zohledněním storna
   let rawTotalCups = monthLogs.reduce((sum, l) => {
     const val = Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0));
     return sum + val;
   }, 0);
 
-  // 3. Kontrolní pojistka podle profilů uživatelů
   const allTimeUsersTotal = (state.users || []).reduce((sum, u) => sum + (Number(u.totalDrank) || 0), 0);
   const totalMonthCups = Math.max(0, allTimeUsersTotal > 0 ? Math.min(rawTotalCups, allTimeUsersTotal) : rawTotalCups);
 
-  // 4. Hledání nejdivočejšího dne
+  // Rekordní den
   const dateMap = {};
   const monthNamesGenitiv = [
     "ledna", "února", "března", "dubna", "května", "června",
@@ -1526,11 +1528,11 @@ function renderBaristaReport() {
   }
 
   const coffeeName = state.kava ? state.kava.nazev : "Výběrová směs";
-  const zustatek = (state.finance && state.finance.zustatek !== undefined) ? state.finance.zustatek : 0;
+  const zustatek = state.finance.zustatek !== undefined ? state.finance.zustatek : 0;
 
   container.innerHTML = `
     <h3>Přežili jsme další měsíc bez výpadku proudu!</h3>
-    <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou kofeinovou vytrvalost. Zde jsou klíčová zjištění interní inspekce za posledních 30 dní:</p>
+    <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou kofeinovou vytrvalost. Zde jsou klíčová zjištění interní inspekce ${reportTitleScope}:</p>
     
     <div class="news-callout" style="text-align: center; padding: 12px 10px;">
       ⚡ <b>MIMOŘÁDNÁ KÁVOVÁ ZPRÁVA</b> ⚡<br>
@@ -1547,7 +1549,6 @@ function renderBaristaReport() {
     <p><b>Ekonomika fondu:</b> Kávová pokladna hlásí <b>${zustatek >= 0 ? "+" : ""}${zustatek} Kč</b>. Insolvenční správce tedy zatím zůstává před dveřmi kuchyňky a nákup dalšího pytle je plně kryt!</p>
   `;
 }
-
 // B. Týdenní žebříček
 function renderWeeklyLeaderboard() {
   const container = document.getElementById("news-weekly-report");
