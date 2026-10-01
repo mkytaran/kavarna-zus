@@ -1406,7 +1406,7 @@ function openNewspaperModal() {
     }
   }
 
-  renderBaristaReport();
+  Report();
   renderWeeklyLeaderboard();
 
   modal.classList.remove("hidden");
@@ -1445,15 +1445,16 @@ document.getElementById("tab-btn-week")?.addEventListener("click", () => {
 });
 
 // A. Měsíční zpráva baristy
+// A. Měsíční zpráva baristy – klouzavých posledních 30 dní
 function renderBaristaReport() {
   const container = document.getElementById("news-barista-report");
   if (!container) return;
 
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
+  // Okno přesně za posledních 30 dní (včetně dneška)
+  const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
 
-  // Pomocná funkce pro bezpečné parsování data
+  // Bezpečné parsování různých formátů dat ze Sheets
   function parseLogDate(val) {
     if (!val) return null;
     if (val instanceof Date) return val;
@@ -1469,38 +1470,24 @@ function renderBaristaReport() {
     return null;
   }
 
-  // 1. Záznamy za aktuální kalendářní měsíc
-  let monthLogs = (state.logs || []).filter(l => {
+  // 1. Záznamy za posledních 30 dní
+  const periodLogs = (state.logs || []).filter(l => {
     const d = parseLogDate(l.date);
     if (!d) return false;
-    return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    return d >= thirtyDaysAgo;
   });
 
-  let reportTitleScope = "za uplynulý měsíc";
-
-  // 2. Fallback na plovoucích 30 dní při začátku měsíce
-  const initialSum = monthLogs.reduce((sum, l) => sum + Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0)), 0);
-  if (initialSum < 5) {
-    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-    monthLogs = (state.logs || []).filter(l => {
-      const d = parseLogDate(l.date);
-      if (!d) return false;
-      return d >= thirtyDaysAgo;
-    });
-    reportTitleScope = "za posledních 30 dní";
-  }
-
-  // 3. Součet šálků se zohledněním storna (+1 i -1)
-  let rawTotalCups = monthLogs.reduce((sum, l) => {
+  // 2. Součet šálků se zohledněním storna (+1 i -1)
+  let rawTotalCups = periodLogs.reduce((sum, l) => {
     const val = Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0));
     return sum + val;
   }, 0);
 
-  // 4. Pojistka: strop podle celkového součtu káv všech uživatelů
+  // 3. Pojistka proti nesouladu: celkový součet ze souhrnu uživatelů
   const allTimeUsersTotal = (state.users || []).reduce((sum, u) => sum + (Number(u.totalDrank) || 0), 0);
-  const totalMonthCups = Math.max(0, allTimeUsersTotal > 0 ? Math.min(rawTotalCups, allTimeUsersTotal) : rawTotalCups);
+  const totalPeriodCups = Math.max(0, allTimeUsersTotal > 0 ? Math.min(rawTotalCups, allTimeUsersTotal) : rawTotalCups);
 
-  // 5. Nalezení nejdivočejšího dne s plným datem (např. Středa 30. září)
+  // 4. Hledání konkrétního rekordního dne v tomto 30denním okně
   const dateMap = {};
   const monthNamesGenitiv = [
     "ledna", "února", "března", "dubna", "května", "června",
@@ -1508,11 +1495,11 @@ function renderBaristaReport() {
   ];
   const dayNamesCz = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
 
-  monthLogs.forEach(l => {
+  periodLogs.forEach(l => {
     const d = parseLogDate(l.date);
     if (d) {
       const val = Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0));
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       if (!dateMap[key]) {
         dateMap[key] = { count: 0, dateObj: d };
       }
@@ -1546,11 +1533,12 @@ function renderBaristaReport() {
 
   container.innerHTML = `
     <h3>Přežili jsme další měsíc bez výpadku proudu!</h3>
-    <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou kofeinovou vytrvalost. Zde jsou klíčová zjištění interní inspekce ${reportTitleScope}:</p>
+    <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou kofeinovou vytrvalost. Zde jsou klíčová zjištění interní inspekce za posledních 30 dní:</p>
     
     <div class="news-callout" style="text-align: center; padding: 12px 10px;">
       ⚡ <b>MIMOŘÁDNÁ KÁVOVÁ ZPRÁVA</b> ⚡<br>
-      Během tohoto období padlo neuvěřitelných <b style="font-size: 1.15rem; color: #2b1810;">${totalMonthCups} šálků kávy</b>! <br> Škola běžela naplno a bez zaváhání.
+      Během tohoto období padlo neuvěřitelných <b style="font-size: 1.15rem; color: #2b1810;">${totalPeriodCups} šálků kávy</b>!<br>
+      Škola běžela naplno a bez zaváhání.
     </div>
 
     <div class="news-callout">
