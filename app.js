@@ -1444,17 +1444,14 @@ document.getElementById("tab-btn-week")?.addEventListener("click", () => {
   document.getElementById("news-section-month").classList.add("hidden");
 });
 
-// A. Měsíční zpráva baristy
-// A. Měsíční zpráva baristy – klouzavých posledních 30 dní
+// A. Měsíční zpráva baristy – posledních 30 dní
 function renderBaristaReport() {
   const container = document.getElementById("news-barista-report");
   if (!container) return;
 
   const now = new Date();
-  // Okno přesně za posledních 30 dní (včetně dneška)
   const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
 
-  // Bezpečné parsování různých formátů dat ze Sheets
   function parseLogDate(val) {
     if (!val) return null;
     if (val instanceof Date) return val;
@@ -1471,23 +1468,23 @@ function renderBaristaReport() {
   }
 
   // 1. Záznamy za posledních 30 dní
-  const periodLogs = (state.logs || []).filter(l => {
+  const monthLogs = (state.logs || []).filter(l => {
     const d = parseLogDate(l.date);
     if (!d) return false;
     return d >= thirtyDaysAgo;
   });
 
-  // 2. Součet šálků se zohledněním storna (+1 i -1)
-  let rawTotalCups = periodLogs.reduce((sum, l) => {
+  // 2. Součet káv se zohledněním storna
+  let rawTotalCups = monthLogs.reduce((sum, l) => {
     const val = Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0));
     return sum + val;
   }, 0);
 
-  // 3. Pojistka proti nesouladu: celkový součet ze souhrnu uživatelů
+  // 3. Kontrolní pojistka podle profilů uživatelů
   const allTimeUsersTotal = (state.users || []).reduce((sum, u) => sum + (Number(u.totalDrank) || 0), 0);
-  const totalPeriodCups = Math.max(0, allTimeUsersTotal > 0 ? Math.min(rawTotalCups, allTimeUsersTotal) : rawTotalCups);
+  const totalMonthCups = Math.max(0, allTimeUsersTotal > 0 ? Math.min(rawTotalCups, allTimeUsersTotal) : rawTotalCups);
 
-  // 4. Hledání konkrétního rekordního dne v tomto 30denním okně
+  // 4. Hledání nejdivočejšího dne
   const dateMap = {};
   const monthNamesGenitiv = [
     "ledna", "února", "března", "dubna", "května", "června",
@@ -1495,11 +1492,11 @@ function renderBaristaReport() {
   ];
   const dayNamesCz = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
 
-  periodLogs.forEach(l => {
+  monthLogs.forEach(l => {
     const d = parseLogDate(l.date);
     if (d) {
       const val = Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0));
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       if (!dateMap[key]) {
         dateMap[key] = { count: 0, dateObj: d };
       }
@@ -1529,7 +1526,7 @@ function renderBaristaReport() {
   }
 
   const coffeeName = state.kava ? state.kava.nazev : "Výběrová směs";
-  const zustatek = state.finance.zustatek !== undefined ? state.finance.zustatek : 0;
+  const zustatek = (state.finance && state.finance.zustatek !== undefined) ? state.finance.zustatek : 0;
 
   container.innerHTML = `
     <h3>Přežili jsme další měsíc bez výpadku proudu!</h3>
@@ -1537,7 +1534,7 @@ function renderBaristaReport() {
     
     <div class="news-callout" style="text-align: center; padding: 12px 10px;">
       ⚡ <b>MIMOŘÁDNÁ KÁVOVÁ ZPRÁVA</b> ⚡<br>
-      Během tohoto období padlo neuvěřitelných <b style="font-size: 1.15rem; color: #2b1810;">${totalPeriodCups} šálků kávy</b>!<br>
+      Během tohoto období padlo neuvěřitelných <b style="font-size: 1.15rem; color: #2b1810;">${totalMonthCups} šálků kávy</b>!<br>
       Škola běžela naplno a bez zaváhání.
     </div>
 
