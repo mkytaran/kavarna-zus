@@ -1049,8 +1049,15 @@ window.adminVerifyPayment = async function(paymentId, isApproved) {
 
   if (!confirm(msg)) return;
 
+  // 1. Vizuální odezva na tlačítkách v řádku
+  const rowBtn = event?.target;
+  const parentContainer = rowBtn?.parentElement;
+  if (parentContainer) {
+    parentContainer.innerHTML = `<span style="font-size:0.8rem; font-weight:700; color:var(--accent);">⏳ Ukládám...</span>`;
+  }
+
   try {
-    await fetch(SCRIPT_URL, {
+    const res = await fetch(SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify({
         action: "verifyUserPayment",
@@ -1058,9 +1065,24 @@ window.adminVerifyPayment = async function(paymentId, isApproved) {
         approved: isApproved
       })
     });
-    await loadData();
+    const data = await res.json();
+
+    if (data.success) {
+      // 2. Okamžité vyřazení ze stavu a překreslení bez nutnosti čekat na refresh
+      state.pendingPayments = state.pendingPayments.filter(item => String(item.id) !== String(paymentId));
+      localStorage.setItem("zus_cached_pending_payments", JSON.stringify(state.pendingPayments));
+      renderAdminPendingPayments();
+
+      // 3. Dotáhneme aktuální data a přepočteme tabulky
+      await loadData();
+    } else {
+      alert("Chyba při zpracování požadavku na serveru.");
+      renderAdminPendingPayments();
+    }
   } catch (e) {
-    alert("Chyba při komunikaci se serverem.");
+    console.error("Chyba při ověřování platby:", e);
+    alert("Chyba spojení se serverem.");
+    renderAdminPendingPayments();
   }
 };
 
