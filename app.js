@@ -1144,133 +1144,217 @@ window.adminSetPinAndSendSMS = async function(userId, phone, name) {
 };
 
 // ==========================================
-// 9. ADMINISTRACE - HISTORIE KÁV, BALENÍ & TEXTY
+// 9. ADMINISTRACE - HISTORIE KÁV (SLOUČENÁ BALENÍ)
 // ==========================================
 function renderAdminCoffeeHistory() {
   const container = document.getElementById("coffee-history-list");
   if (!container) return;
   container.innerHTML = "";
 
-  const coffeesWithStats = state.allCoffees.map(coffee => {
-    // Spárování hodnocení podle typu kávy (zůstává pro stejnou kávu trvalé)
-    const rawRatings = getRatingsForCoffee(coffee).filter(r => Number(r.rating) > 0);
-    
-    const uniqueMap = new Map();
-    rawRatings.forEach(r => {
-      const uid = String(r.userId);
-      const existing = uniqueMap.get(uid);
+  // 1. Seskupení záznamů podle normalizovaného názvu kávy
+  const groupedMap = new Map();
 
-      if (!existing) {
-        uniqueMap.set(uid, r);
-      } else {
-        const timeExisting = existing.date ? new Date(existing.date).getTime() : 0;
-        const timeCurrent = r.date ? new Date(r.date).getTime() : 0;
+  (state.allCoffees || []).forEach(coffee => {
+    const rawName = (coffee.nazev || "").trim();
+    if (!rawName) return;
+    const key = rawName.toLowerCase();
 
-        if (timeCurrent >= timeExisting) {
-          uniqueMap.set(uid, r);
-        }
-      }
-    });
+    // Výpočet reálných šálků z tohoto konkrétního balení
+    let cupsFromPack = Number(coffee.vypito || 0);
+    const isPackActive = coffee.aktivni === 1;
 
-    const uniqueRatings = Array.from(uniqueMap.values());
-
-    let avg = 0;
-    if (uniqueRatings.length > 0) {
-      const sum = uniqueRatings.reduce((acc, r) => acc + Number(r.rating), 0);
-      avg = Number((sum / uniqueRatings.length).toFixed(1));
-    }
-
-    // Živý přepočet šálků z logů pro aktivní kávu
-    let liveCupsCount = Number(coffee.vypito || 0);
-    const isActive = coffee.aktivni === 1;
-
-    if (isActive && coffee.nasazenoOd) {
+    if (isPackActive && coffee.nasazenoOd) {
       const odDatum = new Date(coffee.nasazenoOd);
-      liveCupsCount = (state.logs || [])
+      cupsFromPack = (state.logs || [])
         .filter(l => new Date(l.date) >= odDatum)
         .reduce((sum, l) => sum + Number(l.diff || 0), 0);
     }
 
-    return {
-      ...coffee,
-      ratingsList: uniqueRatings,
-      avgRating: avg,
-      roundAvg: Math.round(avg),
-      cupsFromPack: Math.max(0, liveCupsCount)
+    const pack = {
+      id: coffee.id,
+      nasazenoOd: coffee.nasazenoOd,
+      nasazenoDo: coffee.nasazenoDo,
+      aktivni: isPackActive,
+      cups: Math.max(0, cupsFromPack)
     };
+
+    if (!groupedMap.has(key)) {
+      groupedMap.set(key, {
+        latestId: coffee.id,
+        nazev: rawName,
+        acidita: coffee.acidita || 3,
+        intenzita: coffee.intenzita || 3,
+        prazeni: coffee.prazeni || 3,
+        info: coffee.info || "",
+        hasActivePack: isPackActive,
+        activePackId: isPackActive ? coffee.id : null,
+        packs: [pack]
+      });
+    } else {
+      const group = groupedMap.get(key);
+      group.packs.push(pack);
+      if (isPackActive) {
+        group.hasActivePack = true;
+        group.activePackId = coffee.id;
+      }
+      // Uchováme nejčerstvější popis a parametry
+      if (coffee.id > group.latestId) {
+        group.latestId = coffee.id;
+        group.info = coffee.info || group.info;
+        group.acidita = coffee.acidita || group.acidita;
+        group.intenzita = coffee.intenzita || group.intenzita;
+        group.prazeni = coffee.prazeni || group.prazeni;
+      }
+    }
   });
 
-  coffeesWithStats.sort((a, b) => {
-    if (a.aktivni === 1) return -1;
-    if (b.aktivni === 1) return 1;
-    return b.id - a.id;
+  const groupedCoffees = Array.from(groupedMap.values());
+
+  // 2. Přidání statistik a hodnocení pro každou kávu
+  groupedCoffees.forEach(group => {
+    // Řazení várek od nejnovější
+    group.packs.sort((a, b) => {
+      const dateA = a.nasazenoOd ? new Date(a.nasazenoOd).getTime() : 0;
+      const dateB = b.nasazenoOd ? new Date(b.nasazenoOd).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    // Celkový součet šálků ze všech balení
+    group.totalCupsAllPacks = group.packs.reduce((acc, p) => acc + p.cups, 0);
+
+    // Hodnocení pro tuto kávu
+    const rawRatings = getRatingsForCoffee({ nazev: group.nazev, id: group.latestId }).filter(r => Number(r.rating) > 0);
+    const uniqueMap = new Map();
+    rawRatings.forEach(r => {
+      const uid = String(r.userId);
+      const existing = uniqueMap.get(uid);
+      if (!existing || (r.date && new Date(r.date).getTime() > new Date(existing.date || 0).getTime())) {
+        uniqueMap.set(uid, r);
+      }
+    });
+
+    const uniqueRatings = Array.from(uniqueMap.values());
+    group.ratingsList = uniqueRatings;
+    if (uniqueRatings.length > 0) {
+      const sum = uniqueRatings.reduce((acc, r) => acc + Number(r.rating), 0);
+      group.avgRating = Number((sum / uniqueRatings.length).toFixed(1));
+    } else {
+      group.avgRating = 0;
+    }
   });
 
-  coffeesWithStats.forEach(coffee => {
-    const isActive = coffee.aktivni === 1;
+  // 3. Řazení: aktivní káva na první místo, ostatní podle nejnovějšího nasazení/ID
+  groupedCoffees.sort((a, b) => {
+    if (a.hasActivePack) return -1;
+    if (b.hasActivePack) return 1;
+    return b.latestId - a.latestId;
+  });
+
+  // 4. Vykreslení karet
+  groupedCoffees.forEach(coffee => {
+    const isActive = coffee.hasActivePack;
     const card = document.createElement("div");
     card.className = `coffee-card-item ${isActive ? "is-active" : ""}`;
 
     let heartsStr = "";
+    const roundAvg = Math.round(coffee.avgRating);
     for (let i = 1; i <= 5; i++) {
-      heartsStr += i <= coffee.roundAvg ? "♥" : "♡";
+      heartsStr += i <= roundAvg ? "♥" : "♡";
     }
 
-    let dateInfo = `<span style="font-size:0.75rem; color:#888;">Zatím nebyla nasazena</span>`;
-    if (coffee.nasazenoOd) {
-      const od = new Date(coffee.nasazenoOd);
-      const doDatum = coffee.nasazenoDo ? new Date(coffee.nasazenoDo) : new Date();
-      
-      const dny = countWorkingDays(od, doDatum);
-      const dayWord = dny === 1 ? 'den' : (dny >= 2 && dny <= 4 ? 'dny' : 'dní');
-      dateInfo = `<span style="font-size:0.75rem; color:var(--text-muted);">🗓️ ${od.toLocaleDateString('cs-CZ')} – ${coffee.nasazenoDo ? new Date(coffee.nasazenoDo).toLocaleDateString('cs-CZ') : 'dosud'} <b>(${dny} prac. ${dayWord})</b></span>`;
+    // Vygenerování řádků jednotlivých várek
+    let packsHtml = "";
+    if (coffee.packs.length === 0 || !coffee.packs[0].nasazenoOd) {
+      packsHtml = `<div style="font-size:0.75rem; color:#888; font-style:italic;">Zatím nenasazeno do mlýnku.</div>`;
+    } else {
+      packsHtml = coffee.packs.map((p, idx) => {
+        const orderNum = coffee.packs.length - idx; // 1. várka, 2. várka...
+        const od = p.nasazenoOd ? new Date(p.nasazenoOd) : null;
+        const doDatum = p.nasazenoDo ? new Date(p.nasazenoDo) : new Date();
+        const dny = od ? countWorkingDays(od, doDatum) : 0;
+        const dayWord = dny === 1 ? 'den' : (dny >= 2 && dny <= 4 ? 'dny' : 'dní');
+
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 4px 6px; border-bottom: 1px dotted rgba(0,0,0,0.08); font-size: 0.8rem;">
+            <div>
+              <b>${orderNum}. várka</b> 
+              ${p.aktivni ? '<span class="active-pill" style="font-size:0.65rem; padding:1px 5px; margin-left:4px;">Nyní v kávovaru</span>' : ''}
+              <br>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">
+                ${od ? od.toLocaleDateString('cs-CZ') : '?'} – ${p.nasazenoDo ? new Date(p.nasazenoDo).toLocaleDateString('cs-CZ') : 'dosud'} (${dny} prac. ${dayWord})
+              </span>
+            </div>
+            <div style="text-align:right;">
+              <b style="color:var(--primary); font-size: 0.9rem;">${p.cups} ☕</b>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
+
+    const deployTargetId = isActive ? coffee.activePackId : coffee.latestId;
 
     card.innerHTML = `
-      <div class="coffee-card-head" onclick="toggleCoffeeDetail(${coffee.id})" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; padding:6px 4px;">
+      <div class="coffee-card-head" onclick="toggleCoffeeDetail(${coffee.latestId})" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; padding:6px 4px;">
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <b style="font-size:0.95rem;">${coffee.nazev}</b>
           ${isActive ? '<span class="active-pill" style="font-size:0.7rem; padding:2px 6px;">V kávovaru</span>' : ''}
+          <span style="font-size:0.8rem; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:10px; color:var(--text-muted);">
+            ${coffee.packs.filter(p => p.nasazenoOd).length} ${coffee.packs.filter(p => p.nasazenoOd).length === 1 ? 'balení' : 'balení'}
+          </span>
           <span style="font-size:0.85rem; color:var(--primary); font-weight:700;">★ ${coffee.avgRating > 0 ? coffee.avgRating.toFixed(1) : '-.-'}</span>
         </div>
-        <span id="arrow-${coffee.id}" class="dropdown-arrow" style="font-size:0.8rem;">▼</span>
+        <span id="arrow-${coffee.latestId}" class="dropdown-arrow" style="font-size:0.8rem;">▼</span>
       </div>
 
-      <div id="detail-${coffee.id}" class="coffee-card-details hidden" style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--card-border);">
-        <div style="margin-bottom:6px;">${dateInfo}</div>
-
-        <!-- PŘEHLED VYPITYCH ŠÁLKŮ Z TOHOTO BALENÍ -->
-        <div style="background:#fff7ee; border:1px solid #ffd8a8; padding:6px 10px; border-radius:6px; margin-bottom:8px; font-size:0.85rem;">
-          ☕ Vypito z tohoto balení: <b style="color:var(--primary); font-size:0.95rem;">${coffee.cupsFromPack} šálků</b>
-          ${isActive ? '<small style="color:var(--accent); font-weight:600;"> (živě z kávovaru)</small>' : ''}
+      <div id="detail-${coffee.latestId}" class="coffee-card-details hidden" style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--card-border);">
+        
+        <!-- SOUHRNNÉ ČÍSLO ŠÁLKŮ ZE VŠECH VÁREK -->
+        <div style="background:#fff7ee; border:1px solid #ffd8a8; padding:8px 10px; border-radius:8px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:0.85rem; font-weight:700; color:var(--text-main);">Celkem vypito z tohoto druhu:</span>
+            <b style="color:var(--primary); font-size:1.05rem;">${coffee.totalCupsAllPacks} šálků</b>
+          </div>
         </div>
 
+        <!-- SEZNAM JEDNOTLIVÝCH BALENÍ -->
+        <div style="background:#fff; border:1px solid var(--card-border); border-radius:8px; padding:6px 8px; margin-bottom:8px;">
+          <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">
+            Historie nasazených balení:
+          </div>
+          ${packsHtml}
+        </div>
+
+        <!-- PARAMETRY CHUTI -->
         <div style="display:flex; gap:12px; margin-bottom:8px; font-size:0.8rem; background:rgba(0,0,0,0.03); padding:4px 8px; border-radius:6px;">
-          <span>Acidita: <b>${coffee.acidita || 3}/5</b></span>
-          <span>Intenzita: <b>${coffee.intenzita || 3}/5</b></span>
-          <span>Pražení: <b>${coffee.prazeni || 3}/5</b></span>
+          <span>Acidita: <b>${coffee.acidita}/5</b></span>
+          <span>Intenzita: <b>${coffee.intenzita}/5</b></span>
+          <span>Pražení: <b>${coffee.prazeni}/5</b></span>
         </div>
 
         <div style="font-size:0.85rem; margin-bottom:6px;">
           Celkově: <b>${coffee.avgRating > 0 ? coffee.avgRating.toFixed(1) : '0.0'}</b> <span class="hearts" style="color:var(--heart-active);">${heartsStr}</span> (${coffee.ratingsList.length} hodnocení)
         </div>
 
+        <!-- POPIS KÁVY -->
         <div style="margin: 8px 0; background: #fff; border: 1px solid var(--card-border); border-radius: 8px; padding: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">POPIS A CHUŤOVÝ PROFIL:</span>
-            <button type="button" class="btn-small" style="padding: 3px 8px; font-size: 0.75rem;" onclick="openCoffeeInfoModal(${coffee.id})">✏️ Upravit ve velkém</button>
+            <button type="button" class="btn-small" style="padding: 3px 8px; font-size: 0.75rem;" onclick="openCoffeeInfoModal(${deployTargetId})">✏️ Upravit</button>
           </div>
-          <div id="info-preview-${coffee.id}" onclick="openCoffeeInfoModal(${coffee.id})" style="font-size: 0.85rem; line-height: 1.4; color: var(--text-main); cursor: pointer; min-height: 38px; white-space: pre-wrap; word-break: break-word;">
+          <div id="info-preview-${deployTargetId}" onclick="openCoffeeInfoModal(${deployTargetId})" style="font-size: 0.85rem; line-height: 1.4; color: var(--text-main); cursor: pointer; min-height: 38px; white-space: pre-wrap; word-break: break-word;">
             ${coffee.info && coffee.info.trim() !== "" ? coffee.info : '<span style="font-style: italic; color: #aaa;">Klikni pro zadání popisu kávy...</span>'}
           </div>
         </div>
 
-        <div id="votes-${coffee.id}" style="margin:4px 0;">
+        <!-- HODNOCENÍ JEDNOTLIVÝCH LIDÍ -->
+        <div id="votes-${coffee.latestId}" style="margin:4px 0;">
           ${coffeeRatingsHtml(coffee.ratingsList)}
         </div>
 
-        <div class="card-actions" style="margin-top:6px;">
-          ${!isActive ? `<button class="btn btn-primary btn-small" onclick="setActiveCoffee(${coffee.id})">☕ Nasadit do mlýnku (nové balení)</button>` : ''}
+        <!-- AKČNÍ TLAČÍTKO NASAZENÍ -->
+        <div class="card-actions" style="margin-top:8px;">
+          ${!isActive ? `<button class="btn btn-primary btn-small" onclick="setActiveCoffee(${coffee.latestId})">☕ Nasadit nové balení do mlýnku</button>` : ''}
         </div>
       </div>
     `;
