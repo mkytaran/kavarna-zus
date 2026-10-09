@@ -706,14 +706,19 @@ function updateCupsView() {
   grid.innerHTML = "";
 
   const miniCupSVG = `<svg viewBox="0 0 24 24"><path d="M2 19h18v2H2zM20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3z"/></svg>`;
+  
+  // Zobrazujeme přesně počet předplacených šálků (případně dluh, pokud přetáhne)
   const gridCount = Math.max(totalCups, drankCups);
 
   for (let i = 1; i <= gridCount; i++) {
     const div = document.createElement("div");
     div.classList.add("mini-cup");
     div.innerHTML = miniCupSVG;
-    if (i <= totalCups) div.classList.add(i <= drankCups ? "full" : "empty");
-    else div.classList.add("debt");
+    if (i <= totalCups) {
+      div.classList.add(i <= drankCups ? "full" : "empty");
+    } else {
+      div.classList.add("debt");
+    }
     grid.appendChild(div);
   }
 
@@ -816,9 +821,17 @@ async function submitPaymentClaim(amount) {
   const cenaKavy = Number(state.finance?.cenaKavy) || 10;
   const cupsToAdd = Math.floor(amount / cenaKavy);
 
-  // Optimistické navýšení v UI
-  u.prepaid = (Number(u.prepaid) || 0) + cupsToAdd;
+  // 1. Spočítáme stávající bilanci (zbylé šálky nebo dluh)
+  const currentPrepaid = Number(u.prepaid) || 0;
+  const currentDrank = Number(u.drank) || 0;
+  const currentBalance = currentPrepaid - currentDrank;
+
+  // 2. Nové předplatné = stávající zůstatek + nově zaplacené šálky
+  // Vypité šálky v tomto cyklu vynulujeme na 0
+  u.prepaid = Math.max(0, currentBalance + cupsToAdd);
+  u.drank = 0;
   u.totalPaid = (Number(u.totalPaid) || 0) + amount;
+
   localStorage.setItem("zus_saved_user", JSON.stringify(u));
   updateCupsView();
 
