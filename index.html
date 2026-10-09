@@ -96,12 +96,10 @@
               <div class="badge-top-row">
                 <div style="display: flex; gap: 6px; align-items: center;">
                   <div class="badge-tag">PRÁVĚ V KÁVOVARU</div>
-                  <!-- Čistá pilulka bez ikony -->
                   <div id="coffee-days-badge" class="badge-rating-pill hidden">
                     <span id="coffee-days-val">-.-</span>
                   </div>
                 </div>
-                <!-- Celkové hodnocení vedle ohnutého rohu -->
                 <div id="coffee-rating-badge" class="badge-rating-pill">
                   <span class="star-icon">★</span>
                   <span id="badge-rating-avg">-.-</span>
@@ -148,7 +146,7 @@
           </div>
         </div>
 
-        <!-- 3. Velký interaktivní šálek (bez cizích prvků uvnitř) -->
+        <!-- 3. Velký interaktivní šálek -->
         <div class="cup-center">
           <div id="cup-action" class="cup-big" title="Klepnutím odepíšeš kávu" style="position: relative;">
             <div id="main-cup-badge" class="multi-cup-badge hidden" style="top: 25px; right: 40px; width: 32px; height: 32px; font-size: 1.1rem; border: 2px solid var(--bg-app); z-index: 10;">1</div>
@@ -251,6 +249,18 @@
           </div>
           <div class="cups-grid" id="cups-grid"></div>
 
+          <!-- ZÁCHRANNÝ NOTIFIKAČNÍ BANNER (při screenshotu / zavření okna) -->
+          <div id="payment-pending-banner" class="hidden" style="margin-top: 10px; background: #fff8f0; border: 1.5px dashed var(--accent); border-radius: 10px; padding: 10px 12px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <div style="flex: 1;">
+              <b style="color: var(--primary);">Odeslal jsi platbu?</b><br>
+              <span style="color: var(--text-muted); font-size: 0.78rem;">Pokud jsi poslal peníze přes banku:</span>
+            </div>
+            <button type="button" id="banner-claim-btn" class="btn btn-primary btn-small" style="padding: 6px 10px; font-size: 0.8rem; white-space: nowrap;">
+              Připsat kredit
+            </button>
+            <button type="button" id="banner-dismiss-btn" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer; padding:0 4px; line-height:1;">&times;</button>
+          </div>
+
           <!-- TLAČÍTKO PŘEDPLATIT KÁVU PŘES QR -->
           <button type="button" id="open-qr-pay-btn" class="btn-prepay-qr">
             💳 Předplatit kávu (QR platba)
@@ -290,24 +300,17 @@
           </div>
         </div>
 
-        <!-- Přepínání záložek novin -->
         <div class="newspaper-tabs">
           <button type="button" class="news-tab-btn active" id="tab-btn-month">☕ Zpráva baristy</button>
           <button type="button" class="news-tab-btn" id="tab-btn-week">🏆 Týdenní žebříček</button>
         </div>
 
-        <!-- Obsah: Zpráva baristy -->
         <div id="news-section-month" class="newspaper-content">
-          <div id="news-barista-report" class="news-article">
-            <!-- Generováno dynamicky v JS -->
-          </div>
+          <div id="news-barista-report" class="news-article"></div>
         </div>
 
-        <!-- Obsah: Týdenní žebříček -->
         <div id="news-section-week" class="newspaper-content hidden">
-          <div id="news-weekly-report" class="news-article">
-            <!-- Generováno dynamicky v JS -->
-          </div>
+          <div id="news-weekly-report" class="news-article"></div>
         </div>
 
         <div class="newspaper-actions">
@@ -337,9 +340,19 @@
           <div id="qr-loading-spinner" class="qr-spinner hidden">Generuji QR kód...</div>
         </div>
 
-        <div class="modal-actions">
-          <button type="button" id="qr-download-btn" class="btn btn-secondary" style="margin-top: 0;">⬇️ Stáhnout QR</button>
-          <button type="button" id="qr-close-btn" class="btn btn-primary">Zavřít</button>
+        <!-- Akční tlačítka modálu -->
+        <div class="modal-actions" style="display: flex; flex-direction: column; gap: 8px;">
+          <button type="button" id="qr-save-and-credit-btn" class="btn btn-primary" style="margin-top: 0; font-size: 0.95rem;">
+            💾 Uložit QR / Připsat kredit
+          </button>
+          <div style="display: flex; gap: 8px; width: 100%;">
+            <button type="button" id="qr-copy-data-btn" class="btn btn-secondary" style="margin-top: 0; flex: 1; font-size: 0.8rem; padding: 10px 4px;">
+              📋 Kopírovat účet
+            </button>
+            <button type="button" id="qr-close-btn" class="btn btn-secondary" style="margin-top: 0; flex: 1; font-size: 0.8rem; padding: 10px 4px;">
+              Zavřít
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -364,6 +377,12 @@
     <!-- ADMIN PANEL -->
     <section id="admin-view" class="hidden content-with-bottom-bar">
       <h2>Administrace</h2>
+
+      <!-- SCHVALOVÁNÍ NOVÝCH QR PLATEB Z BANKY -->
+      <div id="admin-pending-payments-container" class="card hidden" style="border: 2px solid var(--accent); background: #fffcf7; margin-bottom: 12px;">
+        <div class="badge-tag" style="color: var(--accent);">NOVÉ PLATBY K OVĚŘENÍ V BANCE</div>
+        <div id="admin-pending-payments-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
 
       <!-- ŽÁDOSTI HOSTŮ O ÚČET A SCHVÁLENÍ PINEM -->
       <div id="admin-pending-container" class="card hidden" style="border: 2px solid var(--accent); background: #fff8f2; margin-bottom: 10px;">
@@ -406,7 +425,6 @@
             </select>
           </div>
 
-          <!-- Pole pro nového uživatele (zobrazí se při volbě NEW) -->
           <div id="new-user-fields" class="hidden" style="background: rgba(0,0,0,0.03); padding: 8px; border-radius: 8px; margin-bottom: 8px;">
             <div class="input-group">
               <label for="new-user-name">Celé jméno:</label>

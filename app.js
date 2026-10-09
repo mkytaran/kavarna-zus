@@ -51,15 +51,16 @@ let state = {
   currentUser: null,
   clicksInSession: 0,
   todayDrank: 0,
-  logs: []
+  logs: [],
+  pendingPayments: []
 };
 
 let undoTimeout = null;
 
-// Registrace a automatická aktualizace PWA (Android + iOS Safari)
+// Registrace a automatická okamžitá aktualizace PWA (Android + iOS Safari)
 if ("serviceWorker" in navigator) {
   let swRegistration = null;
-  let isRefreshing = false;
+  let refreshing = false;
 
   const triggerUpdate = () => {
     if (swRegistration) {
@@ -67,21 +68,32 @@ if ("serviceWorker" in navigator) {
     }
   };
 
+  // Jakmile nový Service Worker převezme kontrolu (clients.claim()), okamžitě obnovíme stránku
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").then((reg) => {
       swRegistration = reg;
       reg.update();
+      // Periodická kontrola každých 15 minut
       setInterval(() => triggerUpdate(), 15 * 60 * 1000);
     }).catch((err) => console.log("SW reg failed: ", err));
 
+    // Zpětná kompatibilita pro zprávu ASSET_UPDATED z tvého stávajícího sw.js
     navigator.serviceWorker.addEventListener("message", (event) => {
-      if (event.data?.type === "ASSET_UPDATED" && !isRefreshing) {
-        isRefreshing = true;
-        window.location.href = window.location.origin + window.location.pathname;
+      if (event.data?.type === "ASSET_UPDATED" && !refreshing) {
+        refreshing = true;
+        window.location.reload();
       }
     });
   });
 
+  // Kontrola nové verze při každém přepnutí zpět do aplikace z multitaskingu
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       triggerUpdate();
@@ -119,12 +131,14 @@ function restoreAllCachedData() {
     const cachedFinance = localStorage.getItem("zus_cached_finance");
     const cachedUsers = localStorage.getItem("zus_cached_users");
     const cachedLogs = localStorage.getItem("zus_cached_logs");
+    const cachedPending = localStorage.getItem("zus_cached_pending_payments");
 
     if (cachedKava) state.kava = JSON.parse(cachedKava);
     if (cachedRatings) state.ratings = JSON.parse(cachedRatings);
     if (cachedFinance) state.finance = JSON.parse(cachedFinance);
     if (cachedUsers) state.users = JSON.parse(cachedUsers);
     if (cachedLogs) state.logs = JSON.parse(cachedLogs);
+    if (cachedPending) state.pendingPayments = JSON.parse(cachedPending);
 
     renderCoffeeBadge();
     renderFinance();
@@ -160,12 +174,14 @@ async function loadData() {
     state.allCoffees = data.allCoffees || [];
     state.ratings = data.ratings || [];
     state.logs = data.logs || [];
+    state.pendingPayments = data.pendingPayments || [];
 
     localStorage.setItem("zus_cached_kava", JSON.stringify(state.kava));
     localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
     localStorage.setItem("zus_cached_finance", JSON.stringify(state.finance));
     localStorage.setItem("zus_cached_users", JSON.stringify(state.users));
     localStorage.setItem("zus_cached_logs", JSON.stringify(state.logs));
+    localStorage.setItem("zus_cached_pending_payments", JSON.stringify(state.pendingPayments));
 
     renderCoffeeBadge();
     renderFinance();
@@ -208,13 +224,14 @@ async function loadData() {
       }
     }
 
-    // Proužek Černé kroniky se zobrazí teprve s načtenými daty
+    // Proužek Černé kávy se zobrazí teprve s načtenými daty
     if (state.currentUser) {
       document.getElementById("coffee-newspaper-tag")?.classList.remove("hidden");
     }
 
     const adminView = document.getElementById("admin-view");
     if (adminView && !adminView.classList.contains("hidden")) {
+      renderAdminPendingPayments();
       renderAdminPendingRequests();
       renderAdminUsers();
       renderUsageStats();
@@ -732,7 +749,7 @@ function renderFinance() {
 }
 
 // ==========================================
-// 6. QR PLATBA SPAYD
+// 6. QR PLATBA SPAYD & PŘIPISOVÁNÍ KREDITU
 // ==========================================
 function generateSpaydString(amount, message) {
   const cleanMsg = message.normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 60);
@@ -758,23 +775,130 @@ function updateQrPaymentModal() {
   img.src = qrUrl;
 }
 
-document.getElementById("open-qr-pay-btn")?.addEventListener("click", () => {
-  document.getElementById("qr-pay-modal").classList.remove("hidden");
-  updateQrPaymentModal();
-});
-document.getElementById("qr-close-btn")?.addEventListener("click", () => document.getElementById("qr-pay-modal").classList.add("hidden"));
-document.getElementById("qr-amount-input")?.addEventListener("input", updateQrPaymentModal);
-document.getElementById("qr-download-btn")?.addEventListener("click", async () => {
+// Pomocná funkce: stažení QR obrázku do mobilu/PC
+async function downloadQrImageBlob(amount) {
   const img = document.getElementById("qr-pay-image");
-  if (!img.src) return;
+  if (!img || !img.src) return;
   try {
     const resp = await fetch(img.src);
     const blob = await resp.blob();
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `QR-platba-${state.currentUser ? state.currentUser.name : 'kafe'}.png`;
+    a.download = `QR-platba-${amount}Kc-${state.currentUser ? state.currentUser.name : 'kafe'}.png`;
     a.click();
-  } catch (e) { window.open(img.src, "_blank"); }
+  } catch (e) {
+    window.open(img.src, "_blank");
+  }
+}
+
+// Optimistické připsání kreditu a odeslání požadavku na server
+async function submitPaymentClaim(amount) {
+  const u = state.currentUser;
+  if (!u || !amount || amount <= 0) return;
+
+  const cenaKavy = Number(state.finance?.cenaKavy) || 10;
+  const cupsToAdd = Math.floor(amount / cenaKavy);
+
+  // 1. Okamžitá optimistická odezva v rozhraní
+  u.prepaid = (Number(u.prepaid) || 0) + cupsToAdd;
+  u.totalPaid = (Number(u.totalPaid) || 0) + amount;
+  localStorage.setItem("zus_saved_user", JSON.stringify(u));
+  updateCupsView();
+
+  hidePaymentBanner();
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "submitUserPayment",
+        userId: u.id,
+        userName: u.name,
+        amount: amount,
+        cups: cupsToAdd
+      })
+    });
+  } catch (err) {
+    console.warn("Platba byla zapsána lokálně offline:", err);
+  }
+}
+
+// Záchranný notifikační banner na hlavní obrazovce
+function showPaymentBanner(amount) {
+  const banner = document.getElementById("payment-pending-banner");
+  const claimBtn = document.getElementById("banner-claim-btn");
+  if (!banner || !claimBtn) return;
+
+  claimBtn.textContent = `Připsat ${amount} Kč`;
+  claimBtn.onclick = async () => {
+    claimBtn.disabled = true;
+    claimBtn.textContent = "Připisuji...";
+    await submitPaymentClaim(amount);
+    const cenaKavy = Number(state.finance?.cenaKavy) || 10;
+    alert(`Připsáno ${Math.floor(amount / cenaKavy)} šálků (${amount} Kč). Správce platbu zkontroluje.`);
+    await loadData();
+  };
+
+  banner.classList.remove("hidden");
+  setTimeout(() => hidePaymentBanner(), 15 * 60 * 1000);
+}
+
+function hidePaymentBanner() {
+  document.getElementById("payment-pending-banner")?.classList.add("hidden");
+}
+
+document.getElementById("banner-dismiss-btn")?.addEventListener("click", hidePaymentBanner);
+
+document.getElementById("open-qr-pay-btn")?.addEventListener("click", () => {
+  document.getElementById("qr-pay-modal").classList.remove("hidden");
+  updateQrPaymentModal();
+});
+
+// Zavření modálu křížkem -> zobrazení záchranného banneru pro případ screenshotu
+document.getElementById("qr-close-btn")?.addEventListener("click", () => {
+  const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
+  document.getElementById("qr-pay-modal").classList.add("hidden");
+  showPaymentBanner(amount);
+});
+
+document.getElementById("qr-amount-input")?.addEventListener("input", updateQrPaymentModal);
+
+// TLAČÍTKO: Uložit QR / Připsat kredit
+document.getElementById("qr-save-and-credit-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("qr-save-and-credit-btn");
+  const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
+  const cenaKavy = Number(state.finance?.cenaKavy) || 10;
+  const cups = Math.floor(amount / cenaKavy);
+
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "⏳ Ukládám a připisuji...";
+
+  // 1. Stáhneme QR do mobilu
+  await downloadQrImageBlob(amount);
+
+  // 2. Odešleme platbu na server a připíšeme kredit
+  await submitPaymentClaim(amount);
+
+  btn.disabled = false;
+  btn.textContent = origText;
+  document.getElementById("qr-pay-modal")?.classList.add("hidden");
+
+  alert(`QR kód byl stažen. Předplaceno ${cups} šálků (${amount} Kč). Správce platbu potvrdí po přijetí na účet.`);
+  await loadData();
+});
+
+// Zkopírování platebních údajů pro ruční zadání v bance
+document.getElementById("qr-copy-data-btn")?.addEventListener("click", () => {
+  const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
+  const msg = `${state.currentUser ? state.currentUser.name : ''} za kafe`.trim();
+  const textToCopy = `Číslo účtu: 6334341013/0800\nČástka: ${amount} Kč\nZpráva pro příjemce: ${msg}`;
+
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    alert("Platební údaje zkopírovány do schránky!");
+  }).catch(() => {
+    alert("Účet: 6334341013/0800, Zpráva: " + msg);
+  });
 });
 
 // ==========================================
@@ -829,11 +953,13 @@ function openAdminScreen() {
   document.getElementById("admin-switch-btn")?.classList.add("hidden");
   document.getElementById("admin-back-btn")?.classList.remove("hidden");
 
+  renderAdminPendingPayments();
   renderAdminPendingRequests();
   renderAdminCoffeeHistory();
   renderAdminUsers();
   renderUsageStats();
 }
+
 function closeAdminScreen() {
   localStorage.removeItem("zus_current_view");
   document.getElementById("admin-view").classList.add("hidden");
@@ -843,8 +969,62 @@ function closeAdminScreen() {
 }
 
 // ==========================================
-// 8. ADMINISTRACE - SCHVALOVÁNÍ HOSTŮ & SMS
+// 8. ADMINISTRACE - SCHVALOVÁNÍ PLATEB, HOSTŮ & SMS
 // ==========================================
+function renderAdminPendingPayments() {
+  const container = document.getElementById("admin-pending-payments-container");
+  const list = document.getElementById("admin-pending-payments-list");
+  if (!container || !list) return;
+
+  const pending = (state.pendingPayments || []).filter(p => p.status === "PENDING");
+  if (pending.length === 0) {
+    container.classList.add("hidden");
+    list.innerHTML = "";
+    return;
+  }
+
+  container.classList.remove("hidden");
+  list.innerHTML = pending.map(p => `
+    <div style="background:#fff; border:1px solid var(--card-border); padding:8px 10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <b style="font-size:0.95rem; color:var(--primary);">${p.userName}</b> 
+        <span style="font-size:0.75rem; color:var(--text-muted);">(${new Date(p.date).toLocaleDateString('cs-CZ')} ${new Date(p.date).toLocaleTimeString('cs-CZ', {hour:'2-digit', minute:'2-digit'})})</span><br>
+        <span style="font-size:0.85rem; font-weight:700; color:var(--accent);">+${p.amount} Kč</span> 
+        <span style="font-size:0.8rem; color:var(--text-muted);">(${p.cups} šálků)</span>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-primary btn-small" onclick="adminVerifyPayment('${p.id}', true)">✓ Schválit</button>
+        <button class="btn btn-secondary btn-small" style="margin:0; color:#c62828; border-color:#c62828;" onclick="adminVerifyPayment('${p.id}', false)">✕ Zrušit</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.adminVerifyPayment = async function(paymentId, isApproved) {
+  const p = (state.pendingPayments || []).find(item => String(item.id) === String(paymentId));
+  if (!p) return;
+
+  const msg = isApproved 
+    ? `Potvrdit přijetí ${p.amount} Kč od uživatele ${p.userName}?`
+    : `Opravdu zamítnout platbu? Uživateli ${p.userName} bude strženo ${p.cups} šálků (${p.amount} Kč).`;
+
+  if (!confirm(msg)) return;
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "verifyUserPayment",
+        paymentId: paymentId,
+        approved: isApproved
+      })
+    });
+    await loadData();
+  } catch (e) {
+    alert("Chyba při komunikaci se serverem.");
+  }
+};
+
 function renderAdminPendingRequests() {
   const container = document.getElementById("admin-pending-container");
   const list = document.getElementById("admin-pending-list");
@@ -1382,7 +1562,14 @@ function renderUsageStats() {
 }
 
 document.querySelectorAll(".admin-details").forEach(detail => {
-  detail.addEventListener("toggle", () => { if (detail.open) { renderUsageStats(); renderAdminUsers(); renderAdminPendingRequests(); } });
+  detail.addEventListener("toggle", () => { 
+    if (detail.open) { 
+      renderAdminPendingPayments();
+      renderUsageStats(); 
+      renderAdminUsers(); 
+      renderAdminPendingRequests(); 
+    } 
+  });
 });
 
 // ==========================================
@@ -1450,7 +1637,6 @@ function renderBaristaReport() {
   if (!container) return;
 
   const now = new Date();
-  // Posledních 30 dní jako výchozí stav
   const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
 
   function parseLogDate(val) {
@@ -1468,7 +1654,6 @@ function renderBaristaReport() {
     return null;
   }
 
-  // 1. Záznamy rovnou za posledních 30 dní
   let monthLogs = (state.logs || []).filter(l => {
     const d = parseLogDate(l.date);
     if (!d) return false;
@@ -1477,7 +1662,6 @@ function renderBaristaReport() {
 
   let reportTitleScope = "za posledních 30 dní";
 
-  // Součet šálků se zohledněním storna
   let rawTotalCups = monthLogs.reduce((sum, l) => {
     const val = Number(l.diff !== undefined ? l.diff : (l.count || l.cups || 0));
     return sum + val;
@@ -1486,7 +1670,6 @@ function renderBaristaReport() {
   const allTimeUsersTotal = (state.users || []).reduce((sum, u) => sum + (Number(u.totalDrank) || 0), 0);
   const totalMonthCups = Math.max(0, allTimeUsersTotal > 0 ? Math.min(rawTotalCups, allTimeUsersTotal) : rawTotalCups);
 
-  // Rekordní den
   const dateMap = {};
   const monthNamesGenitiv = [
     "ledna", "února", "března", "dubna", "května", "června",
@@ -1549,6 +1732,7 @@ function renderBaristaReport() {
     <p><b>Ekonomika fondu:</b> Kávová pokladna hlásí <b>${zustatek >= 0 ? "+" : ""}${zustatek} Kč</b>. Insolvenční správce tedy zatím zůstává před dveřmi kuchyňky a nákup dalšího pytle je plně kryt!</p>
   `;
 }
+
 // B. Týdenní žebříček
 function renderWeeklyLeaderboard() {
   const container = document.getElementById("news-weekly-report");
