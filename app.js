@@ -42,10 +42,22 @@ function countWorkingDays(startDate, endDate = new Date()) {
   return Math.max(1, workDays);
 }
 
+// Pomocná funkce: vyhledá hodnocení kávy podle názvu (přenáší hodnocení mezi baleními stejné kávy)
+function getRatingsForCoffee(coffee) {
+  if (!coffee || !coffee.nazev) return [];
+  const targetName = coffee.nazev.trim().toLowerCase();
+
+  return (state.ratings || []).filter(r => {
+    if (String(r.kavaId) === String(coffee.id)) return true;
+    const parent = (state.allCoffees || []).find(c => String(c.id) === String(r.kavaId));
+    return parent && (parent.nazev || "").trim().toLowerCase() === targetName;
+  });
+}
+
 let state = {
   users: [],
   finance: { cenaKavy: 10 },
-  kava: { id: 1, nazev: "Načítám kávu...", acidita: 3, intenzita: 3, prazeni: 3, aktivni: 1, info: "" },
+  kava: { id: 1, nazev: "Načítám kávu...", acidita: 3, intenzita: 3, prazeni: 3, aktivni: 1, info: "", vypito: 0 },
   allCoffees: [],
   ratings: [],
   currentUser: null,
@@ -68,7 +80,6 @@ if ("serviceWorker" in navigator) {
     }
   };
 
-  // Jakmile nový Service Worker převezme kontrolu (clients.claim()), okamžitě obnovíme stránku
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!refreshing) {
       refreshing = true;
@@ -80,11 +91,9 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").then((reg) => {
       swRegistration = reg;
       reg.update();
-      // Periodická kontrola každých 15 minut
       setInterval(() => triggerUpdate(), 15 * 60 * 1000);
     }).catch((err) => console.log("SW reg failed: ", err));
 
-    // Zpětná kompatibilita pro zprávu ASSET_UPDATED z tvého stávajícího sw.js
     navigator.serviceWorker.addEventListener("message", (event) => {
       if (event.data?.type === "ASSET_UPDATED" && !refreshing) {
         refreshing = true;
@@ -93,7 +102,6 @@ if ("serviceWorker" in navigator) {
     });
   });
 
-  // Kontrola nové verze při každém přepnutí zpět do aplikace z multitaskingu
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       triggerUpdate();
@@ -224,7 +232,6 @@ async function loadData() {
       }
     }
 
-    // Proužek Černé kávy se zobrazí teprve s načtenými daty
     if (state.currentUser) {
       document.getElementById("coffee-newspaper-tag")?.classList.remove("hidden");
     }
@@ -469,9 +476,8 @@ function renderCoffeeBadge() {
   const avgEl = document.getElementById("badge-rating-avg");
   const countEl = document.getElementById("badge-rating-count");
   if (avgEl && countEl) {
-    const rawRatings = state.ratings.filter(
-      r => String(r.kavaId) === String(state.kava.id) && Number(r.rating) > 0
-    );
+    // Párujeme hodnocení podle typu/názvu kávy, takže zůstává zachováno pro stejnou kávu
+    const rawRatings = getRatingsForCoffee(state.kava).filter(r => Number(r.rating) > 0);
 
     const uniqueMap = new Map();
     rawRatings.forEach(r => {
@@ -512,16 +518,19 @@ function initRating() {
   let myRating = 0;
 
   if (state.currentUser && state.kava) {
-    const directCache = localStorage.getItem(`zus_my_rating_${state.kava.id}_${state.currentUser.id}`);
+    const coffeeCleanName = (state.kava.nazev || "").trim().toLowerCase();
+    const directCache = localStorage.getItem(`zus_my_rating_name_${coffeeCleanName}_${state.currentUser.id}`);
+    
     if (directCache !== null) {
       myRating = Number(directCache);
     } else {
-      const found = state.ratings.find(
-        r => String(r.kavaId) === String(state.kava.id) && String(r.userId) === String(state.currentUser.id)
+      // Zjistíme minulé hodnocení pro tuto kávu
+      const found = getRatingsForCoffee(state.kava).find(
+        r => String(r.userId) === String(state.currentUser.id)
       );
       if (found) {
-        myRating = found.rating;
-        localStorage.setItem(`zus_my_rating_${state.kava.id}_${state.currentUser.id}`, myRating);
+        myRating = Number(found.rating);
+        localStorage.setItem(`zus_my_rating_name_${coffeeCleanName}_${state.currentUser.id}`, myRating);
       }
     }
   }
@@ -534,8 +543,9 @@ function initRating() {
       const val = Number(btn.getAttribute("data-val"));
       if (!state.currentUser || !state.kava) return;
 
+      const coffeeCleanName = (state.kava.nazev || "").trim().toLowerCase();
       paintHearts(val);
-      localStorage.setItem(`zus_my_rating_${state.kava.id}_${state.currentUser.id}`, val);
+      localStorage.setItem(`zus_my_rating_name_${coffeeCleanName}_${state.currentUser.id}`, val);
 
       const nowIso = new Date().toISOString();
       const existing = state.ratings.find(
@@ -707,7 +717,7 @@ function updateCupsView() {
 
   const miniCupSVG = `<svg viewBox="0 0 24 24"><path d="M2 19h18v2H2zM20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3z"/></svg>`;
   
-  // Zobrazujeme přesně počet předplacených šálků (případně dluh, pokud přetáhne)
+  // Zobrazujeme přesný aktuální cyklus předplatného
   const gridCount = Math.max(totalCups, drankCups);
 
   for (let i = 1; i <= gridCount; i++) {
@@ -813,7 +823,7 @@ async function downloadQrImageBlob(amount) {
   }
 }
 
-// Společné připsání kreditu a odeslání požadavku na server
+// Společné připsání kreditu a odeslání na server (s vyúčtováním cyklu)
 async function submitPaymentClaim(amount) {
   const u = state.currentUser;
   if (!u || !amount || amount <= 0) return;
@@ -821,13 +831,10 @@ async function submitPaymentClaim(amount) {
   const cenaKavy = Number(state.finance?.cenaKavy) || 10;
   const cupsToAdd = Math.floor(amount / cenaKavy);
 
-  // 1. Spočítáme stávající bilanci (zbylé šálky nebo dluh)
   const currentPrepaid = Number(u.prepaid) || 0;
   const currentDrank = Number(u.drank) || 0;
   const currentBalance = currentPrepaid - currentDrank;
 
-  // 2. Nové předplatné = stávající zůstatek + nově zaplacené šálky
-  // Vypité šálky v tomto cyklu vynulujeme na 0
   u.prepaid = Math.max(0, currentBalance + cupsToAdd);
   u.drank = 0;
   u.totalPaid = (Number(u.totalPaid) || 0) + amount;
@@ -877,7 +884,7 @@ function hidePaymentBanner() {
   document.getElementById("payment-pending-banner")?.classList.add("hidden");
 }
 
-// GLOBÁLNÍ DELEGOVANÉ POSLUCHAČE (garantují odchytnutí kliknutí za všech okolností)
+// Delegovaný odchyt kliknutí pro platební akce
 document.addEventListener("click", async (e) => {
   // 1. Otevření modálu platby
   if (e.target.closest("#open-qr-pay-btn")) {
@@ -933,7 +940,7 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
-  // 4. Zavření modálu (spouští záchranný banner pro případ screenshotu)
+  // 4. Zavření modálu
   if (e.target.closest("#qr-close-btn")) {
     e.preventDefault();
     const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
@@ -942,7 +949,7 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
-  // 5. Zavření záchranného banneru křížkem
+  // 5. Zavření banneru křížkem
   if (e.target.closest("#banner-dismiss-btn")) {
     e.preventDefault();
     hidePaymentBanner();
@@ -950,7 +957,6 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// Přepočet QR při změně částky
 document.getElementById("qr-amount-input")?.addEventListener("input", updateQrPaymentModal);
 
 // ==========================================
@@ -1062,7 +1068,6 @@ window.adminVerifyPayment = async function(paymentId, isApproved) {
 
   if (!confirm(msg)) return;
 
-  // 1. Vizuální odezva na tlačítkách v řádku
   const rowBtn = event?.target;
   const parentContainer = rowBtn?.parentElement;
   if (parentContainer) {
@@ -1081,12 +1086,9 @@ window.adminVerifyPayment = async function(paymentId, isApproved) {
     const data = await res.json();
 
     if (data.success) {
-      // 2. Okamžité vyřazení ze stavu a překreslení bez nutnosti čekat na refresh
       state.pendingPayments = state.pendingPayments.filter(item => String(item.id) !== String(paymentId));
       localStorage.setItem("zus_cached_pending_payments", JSON.stringify(state.pendingPayments));
       renderAdminPendingPayments();
-
-      // 3. Dotáhneme aktuální data a přepočteme tabulky
       await loadData();
     } else {
       alert("Chyba při zpracování požadavku na serveru.");
@@ -1142,7 +1144,7 @@ window.adminSetPinAndSendSMS = async function(userId, phone, name) {
 };
 
 // ==========================================
-// 9. ADMINISTRACE - HISTORIE KÁV & TEXTY
+// 9. ADMINISTRACE - HISTORIE KÁV, BALENÍ & TEXTY
 // ==========================================
 function renderAdminCoffeeHistory() {
   const container = document.getElementById("coffee-history-list");
@@ -1150,7 +1152,8 @@ function renderAdminCoffeeHistory() {
   container.innerHTML = "";
 
   const coffeesWithStats = state.allCoffees.map(coffee => {
-    const rawRatings = state.ratings.filter(r => String(r.kavaId) === String(coffee.id) && Number(r.rating) > 0);
+    // Spárování hodnocení podle typu kávy (zůstává pro stejnou kávu trvalé)
+    const rawRatings = getRatingsForCoffee(coffee).filter(r => Number(r.rating) > 0);
     
     const uniqueMap = new Map();
     rawRatings.forEach(r => {
@@ -1177,20 +1180,29 @@ function renderAdminCoffeeHistory() {
       avg = Number((sum / uniqueRatings.length).toFixed(1));
     }
 
+    // Živý přepočet šálků z logů pro aktivní kávu
+    let liveCupsCount = Number(coffee.vypito || 0);
+    const isActive = coffee.aktivni === 1;
+
+    if (isActive && coffee.nasazenoOd) {
+      const odDatum = new Date(coffee.nasazenoOd);
+      liveCupsCount = (state.logs || [])
+        .filter(l => new Date(l.date) >= odDatum)
+        .reduce((sum, l) => sum + Number(l.diff || 0), 0);
+    }
+
     return {
       ...coffee,
       ratingsList: uniqueRatings,
       avgRating: avg,
-      roundAvg: Math.round(avg)
+      roundAvg: Math.round(avg),
+      cupsFromPack: Math.max(0, liveCupsCount)
     };
   });
 
   coffeesWithStats.sort((a, b) => {
     if (a.aktivni === 1) return -1;
     if (b.aktivni === 1) return 1;
-    if (b.avgRating !== a.avgRating) {
-      return b.avgRating - a.avgRating;
-    }
     return b.id - a.id;
   });
 
@@ -1227,6 +1239,12 @@ function renderAdminCoffeeHistory() {
       <div id="detail-${coffee.id}" class="coffee-card-details hidden" style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--card-border);">
         <div style="margin-bottom:6px;">${dateInfo}</div>
 
+        <!-- PŘEHLED VYPITYCH ŠÁLKŮ Z TOHOTO BALENÍ -->
+        <div style="background:#fff7ee; border:1px solid #ffd8a8; padding:6px 10px; border-radius:6px; margin-bottom:8px; font-size:0.85rem;">
+          ☕ Vypito z tohoto balení: <b style="color:var(--primary); font-size:0.95rem;">${coffee.cupsFromPack} šálků</b>
+          ${isActive ? '<small style="color:var(--accent); font-weight:600;"> (živě z kávovaru)</small>' : ''}
+        </div>
+
         <div style="display:flex; gap:12px; margin-bottom:8px; font-size:0.8rem; background:rgba(0,0,0,0.03); padding:4px 8px; border-radius:6px;">
           <span>Acidita: <b>${coffee.acidita || 3}/5</b></span>
           <span>Intenzita: <b>${coffee.intenzita || 3}/5</b></span>
@@ -1252,7 +1270,7 @@ function renderAdminCoffeeHistory() {
         </div>
 
         <div class="card-actions" style="margin-top:6px;">
-          ${!isActive ? `<button class="btn btn-primary btn-small" onclick="setActiveCoffee(${coffee.id})">☕ Nasadit do mlýnku</button>` : ''}
+          ${!isActive ? `<button class="btn btn-primary btn-small" onclick="setActiveCoffee(${coffee.id})">☕ Nasadit do mlýnku (nové balení)</button>` : ''}
         </div>
       </div>
     `;
@@ -1350,13 +1368,11 @@ window.setActiveCoffee = async function(id) {
   const chosen = state.allCoffees.find(c => String(c.id) === String(id));
   if (!chosen) return;
 
-  state.allCoffees.forEach(c => c.aktivni = (String(c.id) === String(id) ? 1 : 0));
-  state.kava = chosen;
-  localStorage.setItem("zus_cached_kava", JSON.stringify(chosen));
-  renderCoffeeBadge(); initRating(); renderAdminCoffeeHistory();
+  if (!confirm(`Nasadit kávu "${chosen.nazev}" do mlýnku jako nové balení? Dosavadní balení bude uzavřeno.`)) return;
 
   await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "setActiveCoffee", id: id }) });
-  alert(`Káva "${chosen.nazev}" byla nastavena jako aktivní!`);
+  await loadData();
+  alert(`Káva "${chosen.nazev}" byla nasazena jako nové balení!`);
 };
 
 window.updateCoffeeInfo = async function(id) {
@@ -1380,7 +1396,7 @@ async function handleCoffeeSave(deploy) {
   const newId = state.allCoffees.length > 0 ? Math.max(...state.allCoffees.map(c => c.id)) + 1 : 1;
   const newCoffee = {
     id: newId, nazev: nazev, acidita: acidita, intenzita: intenzita, prazeni: prazeni, 
-    aktivni: deploy ? 1 : 0, info: info, nasazenoOd: deploy ? new Date().toISOString() : null
+    aktivni: deploy ? 1 : 0, info: info, nasazenoOd: deploy ? new Date().toISOString() : null, vypito: 0
   };
 
   if (deploy) {
@@ -1396,6 +1412,7 @@ async function handleCoffeeSave(deploy) {
   document.getElementById("admin-coffee-info").value = "";
 
   await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "saveCoffee", deploy: deploy, nazev: nazev, info: info, acidita: acidita, intenzita: intenzita, prazeni: prazeni }) });
+  await loadData();
   alert(deploy ? `Káva nasazena!` : `Káva uložena do zásoby.`);
 }
 
