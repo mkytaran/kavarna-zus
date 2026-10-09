@@ -759,9 +759,11 @@ function generateSpaydString(amount, message) {
 
 function updateQrPaymentModal() {
   if (!state.currentUser) return;
-  const amount = Number(document.getElementById("qr-amount-input").value) || 150;
+  const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
   const msg = `${state.currentUser.name} za kafe`;
-  document.getElementById("qr-msg-text").textContent = msg;
+  
+  const msgEl = document.getElementById("qr-msg-text");
+  if (msgEl) msgEl.textContent = msg;
 
   const spayd = generateSpaydString(amount, msg);
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(spayd)}`;
@@ -769,29 +771,44 @@ function updateQrPaymentModal() {
   const img = document.getElementById("qr-pay-image");
   const spinner = document.getElementById("qr-loading-spinner");
 
-  img.classList.add("hidden");
-  spinner.classList.remove("hidden");
-  img.onload = () => { spinner.classList.add("hidden"); img.classList.remove("hidden"); };
-  img.src = qrUrl;
-}
-
-// Pomocná funkce: stažení QR obrázku do mobilu/PC
-async function downloadQrImageBlob(amount) {
-  const img = document.getElementById("qr-pay-image");
-  if (!img || !img.src) return;
-  try {
-    const resp = await fetch(img.src);
-    const blob = await resp.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `QR-platba-${amount}Kc-${state.currentUser ? state.currentUser.name : 'kafe'}.png`;
-    a.click();
-  } catch (e) {
-    window.open(img.src, "_blank");
+  if (img && spinner) {
+    img.classList.add("hidden");
+    spinner.classList.remove("hidden");
+    img.onload = () => { spinner.classList.add("hidden"); img.classList.remove("hidden"); };
+    img.src = qrUrl;
   }
 }
 
-// Optimistické připsání kreditu a odeslání požadavku na server
+// Bezpečné stažení QR kódu bez pádu na CORS
+async function downloadQrImageBlob(amount) {
+  const img = document.getElementById("qr-pay-image");
+  if (!img || !img.src) return;
+
+  const fileName = `QR-platba-${amount}Kc-${state.currentUser ? state.currentUser.name : 'kafe'}.png`;
+
+  try {
+    const resp = await fetch(img.src, { mode: "cors" });
+    if (!resp.ok) throw new Error("Fetch failed");
+    const blob = await resp.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch (e) {
+    const a = document.createElement("a");
+    a.href = img.src;
+    a.target = "_blank";
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+}
+
+// Společné připsání kreditu a odeslání požadavku na server
 async function submitPaymentClaim(amount) {
   const u = state.currentUser;
   if (!u || !amount || amount <= 0) return;
@@ -799,7 +816,7 @@ async function submitPaymentClaim(amount) {
   const cenaKavy = Number(state.finance?.cenaKavy) || 10;
   const cupsToAdd = Math.floor(amount / cenaKavy);
 
-  // 1. Okamžitá optimistická odezva v rozhraní
+  // Optimistické navýšení v UI
   u.prepaid = (Number(u.prepaid) || 0) + cupsToAdd;
   u.totalPaid = (Number(u.totalPaid) || 0) + amount;
   localStorage.setItem("zus_saved_user", JSON.stringify(u));
@@ -823,7 +840,7 @@ async function submitPaymentClaim(amount) {
   }
 }
 
-// Záchranný notifikační banner na hlavní obrazovce
+// Záchytný banner na hlavní obrazovce
 function showPaymentBanner(amount) {
   const banner = document.getElementById("payment-pending-banner");
   const claimBtn = document.getElementById("banner-claim-btn");
@@ -847,59 +864,81 @@ function hidePaymentBanner() {
   document.getElementById("payment-pending-banner")?.classList.add("hidden");
 }
 
-document.getElementById("banner-dismiss-btn")?.addEventListener("click", hidePaymentBanner);
+// GLOBÁLNÍ DELEGOVANÉ POSLUCHAČE (garantují odchytnutí kliknutí za všech okolností)
+document.addEventListener("click", async (e) => {
+  // 1. Otevření modálu platby
+  if (e.target.closest("#open-qr-pay-btn")) {
+    e.preventDefault();
+    document.getElementById("qr-pay-modal")?.classList.remove("hidden");
+    updateQrPaymentModal();
+    return;
+  }
 
-document.getElementById("open-qr-pay-btn")?.addEventListener("click", () => {
-  document.getElementById("qr-pay-modal").classList.remove("hidden");
-  updateQrPaymentModal();
+  // 2. Tlačítko: Uložit QR / Připsat kredit
+  const saveBtn = e.target.closest("#qr-save-and-credit-btn");
+  if (saveBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const amountInput = document.getElementById("qr-amount-input");
+    const amount = Number(amountInput?.value) || 150;
+    const cenaKavy = Number(state.finance?.cenaKavy) || 10;
+    const cups = Math.floor(amount / cenaKavy);
+
+    const origText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "⏳ Ukládám a připisuji...";
+
+    try {
+      await downloadQrImageBlob(amount).catch(err => console.warn("QR download fallback:", err));
+      await submitPaymentClaim(amount);
+      document.getElementById("qr-pay-modal")?.classList.add("hidden");
+      alert(`Předplaceno ${cups} šálků (${amount} Kč). Správce platbu potvrdí po přijetí na účet.`);
+      await loadData();
+    } catch (err) {
+      console.error("Chyba při připsání platby:", err);
+      alert("Došlo k chybě při připsání kreditu.");
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = origText;
+    }
+    return;
+  }
+
+  // 3. Kopírování platebních údajů
+  if (e.target.closest("#qr-copy-data-btn")) {
+    e.preventDefault();
+    const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
+    const msg = `${state.currentUser ? state.currentUser.name : ''} za kafe`.trim();
+    const textToCopy = `Číslo účtu: 6334341013/0800\nČástka: ${amount} Kč\nZpráva pro příjemce: ${msg}`;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      alert("Platební údaje zkopírovány do schránky!");
+    }).catch(() => {
+      alert("Účet: 6334341013/0800, Zpráva: " + msg);
+    });
+    return;
+  }
+
+  // 4. Zavření modálu (spouští záchranný banner pro případ screenshotu)
+  if (e.target.closest("#qr-close-btn")) {
+    e.preventDefault();
+    const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
+    document.getElementById("qr-pay-modal")?.classList.add("hidden");
+    showPaymentBanner(amount);
+    return;
+  }
+
+  // 5. Zavření záchranného banneru křížkem
+  if (e.target.closest("#banner-dismiss-btn")) {
+    e.preventDefault();
+    hidePaymentBanner();
+    return;
+  }
 });
 
-// Zavření modálu křížkem -> zobrazení záchranného banneru pro případ screenshotu
-document.getElementById("qr-close-btn")?.addEventListener("click", () => {
-  const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
-  document.getElementById("qr-pay-modal").classList.add("hidden");
-  showPaymentBanner(amount);
-});
-
+// Přepočet QR při změně částky
 document.getElementById("qr-amount-input")?.addEventListener("input", updateQrPaymentModal);
-
-// TLAČÍTKO: Uložit QR / Připsat kredit
-document.getElementById("qr-save-and-credit-btn")?.addEventListener("click", async () => {
-  const btn = document.getElementById("qr-save-and-credit-btn");
-  const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
-  const cenaKavy = Number(state.finance?.cenaKavy) || 10;
-  const cups = Math.floor(amount / cenaKavy);
-
-  const origText = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "⏳ Ukládám a připisuji...";
-
-  // 1. Stáhneme QR do mobilu
-  await downloadQrImageBlob(amount);
-
-  // 2. Odešleme platbu na server a připíšeme kredit
-  await submitPaymentClaim(amount);
-
-  btn.disabled = false;
-  btn.textContent = origText;
-  document.getElementById("qr-pay-modal")?.classList.add("hidden");
-
-  alert(`QR kód byl stažen. Předplaceno ${cups} šálků (${amount} Kč). Správce platbu potvrdí po přijetí na účet.`);
-  await loadData();
-});
-
-// Zkopírování platebních údajů pro ruční zadání v bance
-document.getElementById("qr-copy-data-btn")?.addEventListener("click", () => {
-  const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
-  const msg = `${state.currentUser ? state.currentUser.name : ''} za kafe`.trim();
-  const textToCopy = `Číslo účtu: 6334341013/0800\nČástka: ${amount} Kč\nZpráva pro příjemce: ${msg}`;
-
-  navigator.clipboard.writeText(textToCopy).then(() => {
-    alert("Platební údaje zkopírovány do schránky!");
-  }).catch(() => {
-    alert("Účet: 6334341013/0800, Zpráva: " + msg);
-  });
-});
 
 // ==========================================
 // 7. ADMINISTRACE - PŘEPÍNÁNÍ
