@@ -1966,6 +1966,74 @@ document.getElementById("news-copy-btn")?.addEventListener("click", () => {
   });
 });
 
+// =========================================================================
+// AUTOMATICKÁ TICHÁ SYNCHRONIZACE NA POZADÍ (iPhony, trvale otevřené taby)
+// =========================================================================
+let lastBackgroundSyncTime = Date.now();
+const MIN_SYNC_INTERVAL_MS = 25 * 1000; // Ne častěji než jednou za 25 sekund
+
+async function silentBackgroundSync(force = false) {
+  const now = Date.now();
+  if (!force && (now - lastBackgroundSyncTime < MIN_SYNC_INTERVAL_MS)) {
+    return;
+  }
+
+  // 1. NEAKTUALIZOVAT, pokud má uživatel rozkliknutý platební modál nebo noviny
+  const isQrModalOpen = !document.getElementById("qr-pay-modal")?.classList.contains("hidden");
+  const isInfoModalOpen = !document.getElementById("coffee-info-modal")?.classList.contains("hidden");
+  const isNewsModalOpen = !document.getElementById("newspaper-modal")?.classList.contains("hidden");
+  if (isQrModalOpen || isInfoModalOpen || isNewsModalOpen) {
+    return;
+  }
+
+  // 2. NEAKTUALIZOVAT, pokud uživatel právě kliká kávu a běží mu 2minutové okno pro Undo
+  if (state.clicksInSession > 0) {
+    return;
+  }
+
+  // 3. NEAKTUALIZOVAT, pokud je administrátor uprostřed psaní nového uživatele/nákupu
+  const adminView = document.getElementById("admin-view");
+  if (adminView && !adminView.classList.contains("hidden")) {
+    const isTyping = document.activeElement && 
+      (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA");
+    if (isTyping) return;
+  }
+
+  try {
+    lastBackgroundSyncTime = Date.now();
+    await loadData();
+  } catch (err) {
+    console.warn("Tichá synchronizace na pozadí selhala:", err);
+  }
+}
+
+// Událost A: Návrat do Safari / odemčení telefonu (klíčové pro iPhone)
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    silentBackgroundSync();
+  }
+});
+
+// Událost B: Návrat z mezipaměti Safari (BFCache - Back-Forward Cache na iOS)
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted || document.visibilityState === "visible") {
+    silentBackgroundSync();
+  }
+});
+
+// Událost C: Kliknutí/přepnutí zpět do okna na PC
+window.addEventListener("focus", () => {
+  silentBackgroundSync();
+});
+
+// Událost D: Trvale rozsvícený displej (např. mobil/tablet položený u kávovaru)
+// Kontrola každých 60 sekund, pouze pokud je obrazovka aktivní
+setInterval(() => {
+  if (document.visibilityState === "visible") {
+    silentBackgroundSync(true);
+  }
+}, 60 * 1000);
+
 // ==========================================
 // START APLIKACE
 // ==========================================
