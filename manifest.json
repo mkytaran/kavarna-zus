@@ -13,7 +13,9 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": "./index.html",
+  "id": "/kavarna-zus/",
+  "scope": "/kavarna-zus/",
+  "start_url": "/kavarna-zus/index.html",
   "background_color": "#f5eee6",
   "theme_color": "#f5eee6",
   "display": "standalone",
