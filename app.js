@@ -1977,6 +1977,11 @@ function renderWeeklyLeaderboard() {
     }
   });
 
+  // Po sečtení všech logů ošetříme, aby týdenní skóre nebylo záporné:
+  Object.keys(userScores).forEach(uid => {
+    userScores[uid].count = Math.max(0, userScores[uid].count);
+  });
+
   const sorted = Object.values(userScores).sort((a, b) => b.count - a.count);
   const totalWeek = sorted.reduce((sum, u) => sum + u.count, 0);
 
