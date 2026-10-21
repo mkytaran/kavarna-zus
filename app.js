@@ -57,6 +57,7 @@ function getRatingsForCoffee(coffee) {
 let state = {
   users: [],
   finance: { cenaKavy: 10 },
+  customNewsText: "",
   kava: { id: 1, nazev: "Načítám kávu...", acidita: 3, intenzita: 3, prazeni: 3, aktivni: 1, info: "", vypito: 0 },
   allCoffees: [],
   ratings: [],
@@ -137,6 +138,7 @@ function restoreAllCachedData() {
     const cachedKava = localStorage.getItem("zus_cached_kava");
     const cachedRatings = localStorage.getItem("zus_cached_ratings");
     const cachedFinance = localStorage.getItem("zus_cached_finance");
+    const cachedNews = localStorage.getItem("zus_cached_news_text");
     const cachedUsers = localStorage.getItem("zus_cached_users");
     const cachedLogs = localStorage.getItem("zus_cached_logs");
     const cachedPending = localStorage.getItem("zus_cached_pending_payments");
@@ -144,6 +146,7 @@ function restoreAllCachedData() {
     if (cachedKava) state.kava = JSON.parse(cachedKava);
     if (cachedRatings) state.ratings = JSON.parse(cachedRatings);
     if (cachedFinance) state.finance = JSON.parse(cachedFinance);
+    if (cachedNews !== null) state.customNewsText = cachedNews;
     if (cachedUsers) state.users = JSON.parse(cachedUsers);
     if (cachedLogs) state.logs = JSON.parse(cachedLogs);
     if (cachedPending) state.pendingPayments = JSON.parse(cachedPending);
@@ -178,6 +181,7 @@ async function loadData() {
 
     state.users = data.users || [];
     state.finance = data.finance || { cenaKavy: 10 };
+    state.customNewsText = data.customNewsText || "";
     if (data.kava) state.kava = data.kava;
     state.allCoffees = data.allCoffees || [];
     state.ratings = data.ratings || [];
@@ -187,6 +191,7 @@ async function loadData() {
     localStorage.setItem("zus_cached_kava", JSON.stringify(state.kava));
     localStorage.setItem("zus_cached_ratings", JSON.stringify(state.ratings));
     localStorage.setItem("zus_cached_finance", JSON.stringify(state.finance));
+    localStorage.setItem("zus_cached_news_text", state.customNewsText);
     localStorage.setItem("zus_cached_users", JSON.stringify(state.users));
     localStorage.setItem("zus_cached_logs", JSON.stringify(state.logs));
     localStorage.setItem("zus_cached_pending_payments", JSON.stringify(state.pendingPayments));
@@ -198,6 +203,11 @@ async function loadData() {
     const priceInput = document.getElementById("admin-coffee-price");
     if (priceInput && state.finance.cenaKavy) {
       priceInput.value = state.finance.cenaKavy;
+    }
+
+    const newsInput = document.getElementById("admin-news-text");
+    if (newsInput && document.activeElement !== newsInput) {
+      newsInput.value = state.customNewsText || "";
     }
 
     const savedUser = localStorage.getItem("zus_saved_user");
@@ -243,6 +253,7 @@ async function loadData() {
       renderAdminUsers();
       renderUsageStats();
       renderAdminCoffeeHistory();
+      syncAdminNewsInput();
     }
   } catch (err) {
     console.error("Chyba při synchronizaci se serverem:", err);
@@ -476,7 +487,6 @@ function renderCoffeeBadge() {
   const avgEl = document.getElementById("badge-rating-avg");
   const countEl = document.getElementById("badge-rating-count");
   if (avgEl && countEl) {
-    // Párujeme hodnocení podle typu/názvu kávy, takže zůstává zachováno pro stejnou kávu
     const rawRatings = getRatingsForCoffee(state.kava).filter(r => Number(r.rating) > 0);
 
     const uniqueMap = new Map();
@@ -524,7 +534,6 @@ function initRating() {
     if (directCache !== null) {
       myRating = Number(directCache);
     } else {
-      // Zjistíme minulé hodnocení pro tuto kávu
       const found = getRatingsForCoffee(state.kava).find(
         r => String(r.userId) === String(state.currentUser.id)
       );
@@ -717,7 +726,6 @@ function updateCupsView() {
 
   const miniCupSVG = `<svg viewBox="0 0 24 24"><path d="M2 19h18v2H2zM20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3z"/></svg>`;
   
-  // Zobrazujeme přesný aktuální cyklus předplatného
   const gridCount = Math.max(totalCups, drankCups);
 
   for (let i = 1; i <= gridCount; i++) {
@@ -794,7 +802,6 @@ function updateQrPaymentModal() {
   }
 }
 
-// Bezpečné stažení QR kódu bez pádu na CORS
 async function downloadQrImageBlob(amount) {
   const img = document.getElementById("qr-pay-image");
   if (!img || !img.src) return;
@@ -823,7 +830,6 @@ async function downloadQrImageBlob(amount) {
   }
 }
 
-// Společné připsání kreditu a odeslání na server (s vyúčtováním cyklu)
 async function submitPaymentClaim(amount) {
   const u = state.currentUser;
   if (!u || !amount || amount <= 0) return;
@@ -860,7 +866,6 @@ async function submitPaymentClaim(amount) {
   }
 }
 
-// Záchytný banner na hlavní obrazovce
 function showPaymentBanner(amount) {
   const banner = document.getElementById("payment-pending-banner");
   const claimBtn = document.getElementById("banner-claim-btn");
@@ -884,9 +889,7 @@ function hidePaymentBanner() {
   document.getElementById("payment-pending-banner")?.classList.add("hidden");
 }
 
-// Delegovaný odchyt kliknutí pro platební akce
 document.addEventListener("click", async (e) => {
-  // 1. Otevření modálu platby
   if (e.target.closest("#open-qr-pay-btn")) {
     e.preventDefault();
     document.getElementById("qr-pay-modal")?.classList.remove("hidden");
@@ -894,7 +897,6 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
-  // 2. Tlačítko: Uložit QR / Připsat kredit
   const saveBtn = e.target.closest("#qr-save-and-credit-btn");
   if (saveBtn) {
     e.preventDefault();
@@ -925,7 +927,6 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
-  // 3. Kopírování platebních údajů
   if (e.target.closest("#qr-copy-data-btn")) {
     e.preventDefault();
     const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
@@ -940,7 +941,6 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
-  // 4. Zavření modálu
   if (e.target.closest("#qr-close-btn")) {
     e.preventDefault();
     const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
@@ -949,7 +949,6 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
-  // 5. Zavření banneru křížkem
   if (e.target.closest("#banner-dismiss-btn")) {
     e.preventDefault();
     hidePaymentBanner();
@@ -1016,6 +1015,7 @@ function openAdminScreen() {
   renderAdminCoffeeHistory();
   renderAdminUsers();
   renderUsageStats();
+  syncAdminNewsInput();
 }
 
 function closeAdminScreen() {
@@ -1297,7 +1297,7 @@ function renderAdminCoffeeHistory() {
           <b style="font-size:0.95rem;">${coffee.nazev}</b>
           ${isActive ? '<span class="active-pill" style="font-size:0.7rem; padding:2px 6px;">V kávovaru</span>' : ''}
           <span style="font-size:0.8rem; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:10px; color:var(--text-muted);">
-            ${validPacks.length} ${validPacks.length === 1 ? 'balení' : (validPacks.length >= 2 && validPacks.length <= 4 ? 'balení' : 'balení')}
+            ${validPacks.length} balení
           </span>
           <span style="font-size:0.85rem; color:var(--primary); font-weight:700;">★ ${coffee.avgRating > 0 ? coffee.avgRating.toFixed(1) : '-.-'}</span>
         </div>
@@ -1499,7 +1499,7 @@ document.getElementById("admin-save-coffee-only")?.addEventListener("click", () 
 document.getElementById("admin-save-coffee-deploy")?.addEventListener("click", () => handleCoffeeSave(true));
 
 // ==========================================
-// 10. ADMINISTRACE - CENA, UŽIVATELÉ, PLATBY
+// 10. ADMINISTRACE - CENA, UŽIVATELÉ, PLATBY & EDITACE NOVIN
 // ==========================================
 document.getElementById("admin-save-price")?.addEventListener("click", async () => {
   const newPrice = Number(document.getElementById("admin-coffee-price").value);
@@ -1507,6 +1507,47 @@ document.getElementById("admin-save-price")?.addEventListener("click", async () 
   state.finance.cenaKavy = newPrice;
   await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "saveCoffeePrice", cena: newPrice }) });
   alert(`Cena uložena na ${newPrice} Kč.`);
+});
+
+function syncAdminNewsInput() {
+  const textarea = document.getElementById("admin-news-text");
+  if (textarea && document.activeElement !== textarea) {
+    textarea.value = state.customNewsText || "";
+  }
+}
+
+document.getElementById("admin-save-news-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("admin-save-news-btn");
+  const textarea = document.getElementById("admin-news-text");
+  const newText = textarea ? textarea.value.trim() : "";
+
+  state.customNewsText = newText;
+  localStorage.setItem("zus_cached_news_text", newText);
+
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "⏳ Ukládám...";
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "saveNewsText", text: newText })
+    });
+    alert("Text měsíčníku byl úspěšně uložen!");
+  } catch (e) {
+    console.error("Chyba při ukládání textu novin:", e);
+    alert("Chyba při ukládání na server.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+});
+
+document.getElementById("admin-reset-news-btn")?.addEventListener("click", () => {
+  const textarea = document.getElementById("admin-news-text");
+  if (textarea) {
+    textarea.value = DEFAULT_NEWS_TEMPLATE;
+  }
 });
 
 function renderAdminUsers() {
@@ -1738,6 +1779,7 @@ document.querySelectorAll(".admin-details").forEach(detail => {
       renderUsageStats(); 
       renderAdminUsers(); 
       renderAdminPendingRequests(); 
+      syncAdminNewsInput();
     } 
   });
 });
@@ -1745,6 +1787,23 @@ document.querySelectorAll(".admin-details").forEach(detail => {
 // ==========================================
 // 12. ČERNÁ KÁVA & KUCHYŇSKÉ NOVINY
 // ==========================================
+const DEFAULT_NEWS_TEMPLATE = `<h3>Přežili jsme další měsíc bez výpadku proudu!</h3>
+<p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou kofeinovou vytrvalost. Zde jsou klíčová zjištění interní inspekce za posledních 30 dní:</p>
+
+<div class="news-callout" style="text-align: center; padding: 12px 10px;">
+  ⚡ <b>MIMOŘÁDNÁ KÁVOVÁ ZPRÁVA</b> ⚡<br>
+  Během tohoto období padlo neuvěřitelných <b style="font-size: 1.15rem; color: #2b1810;">{salky} šálků kávy</b>!<br>
+  Škola běžela naplno a bez zaváhání.
+</div>
+
+<div class="news-callout">
+  🔥 <b>Krizový bod týdne:</b> Titul absolutně nejdivočejšího dne získává <b>{den}</b>, kdy padlo rekordních <b>{rekord} káv</b>. Tehdy se fungovalo výhradně na kofeinový pohon.
+</div>
+
+<p>V aktuálním turnusu nás drží při životě káva <i>{kava}</i>.</p>
+
+<p><b>Ekonomika fondu:</b> Kávová pokladna hlásí <b>{zustatek} Kč</b>. Insolvenční správce tedy zatím zůstává před dveřmi kuchyňky a nákup dalšího pytle je plně kryt!</p>`;
+
 function openNewspaperModal() {
   const modal = document.getElementById("newspaper-modal");
   if (!modal) return;
@@ -1881,26 +1940,21 @@ function renderBaristaReport() {
   }
 
   const coffeeName = state.kava ? state.kava.nazev : "Výběrová směs";
-  const zustatek = state.finance.zustatek !== undefined ? state.finance.zustatek : 0;
+  const rawZustatek = state.finance.zustatek !== undefined ? state.finance.zustatek : 0;
+  const zustatekFormatted = `${rawZustatek >= 0 ? "+" : ""}${rawZustatek}`;
 
-  container.innerHTML = `
-    <h3>Přežili jsme další měsíc bez výpadku proudu!</h3>
-    <p>Vážení kolegové, osazenstvo naší školy prokázalo nezdolnou kofeinovou vytrvalost. Zde jsou klíčová zjištění interní inspekce ${reportTitleScope}:</p>
-    
-    <div class="news-callout" style="text-align: center; padding: 12px 10px;">
-      ⚡ <b>MIMOŘÁDNÁ KÁVOVÁ ZPRÁVA</b> ⚡<br>
-      Během tohoto období padlo neuvěřitelných <b style="font-size: 1.15rem; color: #2b1810;">${totalMonthCups} šálků kávy</b>!<br>
-      Škola běžela naplno a bez zaváhání.
-    </div>
+  let template = (state.customNewsText && state.customNewsText.trim() !== "")
+    ? state.customNewsText
+    : DEFAULT_NEWS_TEMPLATE;
 
-    <div class="news-callout">
-      🔥 <b>Krizový bod týdne:</b> Titul absolutně nejdivočejšího dne získává <b>${peakDayFormatted}</b>, kdy padlo rekordních <b>${maxCups} káv</b>. Tehdy se fungovalo výhradně na kofeinový pohon.
-    </div>
+  const finalHtml = template
+    .replace(/{salky}/g, totalMonthCups)
+    .replace(/{den}/g, peakDayFormatted)
+    .replace(/{rekord}/g, maxCups)
+    .replace(/{kava}/g, coffeeName)
+    .replace(/{zustatek}/g, zustatekFormatted);
 
-    <p>V aktuálním turnusu nás drží při životě káva <i>${coffeeName}</i>.</p>
-    
-    <p><b>Ekonomika fondu:</b> Kávová pokladna hlásí <b>${zustatek >= 0 ? "+" : ""}${zustatek} Kč</b>. Insolvenční správce tedy zatím zůstává před dveřmi kuchyňky a nákup dalšího pytle je plně kryt!</p>
-  `;
+  container.innerHTML = finalHtml;
 }
 
 // B. Týdenní žebříček
@@ -1970,7 +2024,7 @@ document.getElementById("news-copy-btn")?.addEventListener("click", () => {
 // AUTOMATICKÁ TICHÁ SYNCHRONIZACE NA POZADÍ (iPhony, trvale otevřené taby)
 // =========================================================================
 let lastBackgroundSyncTime = Date.now();
-const MIN_SYNC_INTERVAL_MS = 25 * 1000; // Ne častěji než jednou za 25 sekund
+const MIN_SYNC_INTERVAL_MS = 25 * 1000;
 
 async function silentBackgroundSync(force = false) {
   const now = Date.now();
@@ -1978,7 +2032,6 @@ async function silentBackgroundSync(force = false) {
     return;
   }
 
-  // 1. NEAKTUALIZOVAT, pokud má uživatel rozkliknutý platební modál nebo noviny
   const isQrModalOpen = !document.getElementById("qr-pay-modal")?.classList.contains("hidden");
   const isInfoModalOpen = !document.getElementById("coffee-info-modal")?.classList.contains("hidden");
   const isNewsModalOpen = !document.getElementById("newspaper-modal")?.classList.contains("hidden");
@@ -1986,12 +2039,10 @@ async function silentBackgroundSync(force = false) {
     return;
   }
 
-  // 2. NEAKTUALIZOVAT, pokud uživatel právě kliká kávu a běží mu 2minutové okno pro Undo
   if (state.clicksInSession > 0) {
     return;
   }
 
-  // 3. NEAKTUALIZOVAT, pokud je administrátor uprostřed psaní nového uživatele/nákupu
   const adminView = document.getElementById("admin-view");
   if (adminView && !adminView.classList.contains("hidden")) {
     const isTyping = document.activeElement && 
@@ -2007,27 +2058,22 @@ async function silentBackgroundSync(force = false) {
   }
 }
 
-// Událost A: Návrat do Safari / odemčení telefonu (klíčové pro iPhone)
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     silentBackgroundSync();
   }
 });
 
-// Událost B: Návrat z mezipaměti Safari (BFCache - Back-Forward Cache na iOS)
 window.addEventListener("pageshow", (event) => {
   if (event.persisted || document.visibilityState === "visible") {
     silentBackgroundSync();
   }
 });
 
-// Událost C: Kliknutí/přepnutí zpět do okna na PC
 window.addEventListener("focus", () => {
   silentBackgroundSync();
 });
 
-// Událost D: Trvale rozsvícený displej (např. mobil/tablet položený u kávovaru)
-// Kontrola každých 60 sekund, pouze pokud je obrazovka aktivní
 setInterval(() => {
   if (document.visibilityState === "visible") {
     silentBackgroundSync(true);

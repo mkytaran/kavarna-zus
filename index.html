@@ -503,6 +503,26 @@
           <button id="admin-save-price" class="btn btn-primary">Uložit cenu kávy</button>
         </div>
       </details>
+      <details class="card admin-details">
+        <summary class="admin-summary">📰 Úprava textu měsíčníku (Noviny) <span class="dropdown-arrow">▼</span></summary>
+        <div style="padding-top: 12px; margin-top: 10px; border-top: 1px dashed var(--card-border);">
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;">
+            Můžeš použít HTML značky (<code>&lt;b&gt;</code>, <code>&lt;p&gt;</code>) a dynamické zástupné značky:<br>
+            <code>{salky}</code> = vypito za 30 dní &bull; 
+            <code>{den}</code> = rekordní den &bull; 
+            <code>{rekord}</code> = max káv za den &bull; 
+            <code>{kava}</code> = aktuální káva &bull; 
+            <code>{zustatek}</code> = stav pokladny
+          </p>
+          <div class="input-group">
+            <textarea id="admin-news-text" rows="7" style="width: 100%; box-sizing: border-box; padding: 8px; font-size: 0.85rem; border-radius: 8px; border: 1px solid var(--card-border); font-family: inherit; resize: vertical;" placeholder="Zadej vlastní text novin..."></textarea>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button type="button" class="btn btn-primary btn-small" id="admin-save-news-btn" style="flex: 1;">💾 Uložit text novin</button>
+            <button type="button" class="btn btn-secondary btn-small" id="admin-reset-news-btn" style="flex: 1;">Obnovit výchozí</button>
+          </div>
+        </div>
+      </details>
 
       <!-- TENTO MĚSÍC -->
       <details class="card admin-details">
