@@ -614,6 +614,56 @@ details.admin-details summary::-webkit-details-marker,
 summary.admin-summary::-webkit-details-marker { display: none; }
 details.admin-details[open] summary .dropdown-arrow { transform: rotate(180deg); }
 
+/* Ekonomická karta & kalkulace */
+.eco-card {
+  margin-top: 14px;
+  background: #fffcf7 !important;
+  border: 1.5px solid #d4a373 !important;
+}
+.eco-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.eco-subcard {
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.eco-subcard-title {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.eco-detail-box {
+  margin-top: 10px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+}
+.eco-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+.eco-row-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.eco-target-box {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--card-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .stats-list {
   display: flex;
   flex-direction: column;
@@ -860,26 +910,20 @@ body.card-flipped-active .main-lower-sticky {
    ČERNÁ KRONIKA – VZHLED NOVIN & ZÁLOŽKY
    ========================================== */
 
-/* ==========================================
-   ČERNÁ KRONIKA – AUTENTICKÝ ÚTRŽEK NOVIN
-   ========================================== */
-
+/* 1. Autentický útržek novin na boku */
 .newspaper-tag {
   position: fixed;
   right: 0;
-  /* Zvednuto do horní části displeje mimo šálky a předplatné */
   top: 36%;
   transform: translateY(-50%) rotate(-90deg);
   transform-origin: bottom right;
 
-  /* Novinový zažloutlý papír s jemnou strukturou */
   background: #f4edd9;
   color: #1a120c;
 
-  /* Zoubkovaný perforovaný okraj vlevo + dvojitá novinová linka nahoře a dole */
   border-top: 2px solid #2b1810;
   border-left: 2px dashed #6b584a;
-  border-bottom: none; /* Hladce sedí k hraně displeje */
+  border-bottom: none;
   border-right: 2px dashed #6b584a;
   border-radius: 2px 0 0 2px;
 
@@ -888,7 +932,6 @@ body.card-flipped-active .main-lower-sticky {
   align-items: center;
   gap: 8px;
 
-  /* Typografie skutečných novin */
   font-family: "Georgia", "Times New Roman", serif;
   letter-spacing: 1px;
   user-select: none;
@@ -896,7 +939,6 @@ body.card-flipped-active .main-lower-sticky {
   cursor: pointer;
   z-index: 90;
 
-  /* Stín jako skutečný odstávající papír */
   box-shadow: -4px 3px 12px rgba(43, 24, 16, 0.28);
   transition: transform 0.2s ease, background 0.2s ease;
 }
@@ -907,7 +949,6 @@ body.card-flipped-active .main-lower-sticky {
   transform: translateY(-50%) rotate(-90deg) translateY(-3px);
 }
 
-/* Ikona novin narovnaná kolmo k textu */
 .newspaper-tag-icon {
   font-size: 0.95rem;
   display: inline-block;
@@ -915,7 +956,6 @@ body.card-flipped-active .main-lower-sticky {
   filter: sepia(0.5) contrast(1.2);
 }
 
-/* Text záložky stylizovaný jako novinový štítek */
 .newspaper-tag-text {
   display: flex;
   flex-direction: column;
@@ -940,7 +980,7 @@ body.card-flipped-active .main-lower-sticky {
   margin-top: 1px;
 }
 
-/* 2. Rozbalený novinový list (širší formát, bezpečně vepsaný do obrazovky) */
+/* 2. Rozbalený novinový list */
 .newspaper-paper {
   background: #fdfaf3 !important;
   color: #1f1a17 !important;

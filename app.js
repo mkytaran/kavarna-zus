@@ -254,6 +254,7 @@ async function loadData() {
       renderUsageStats();
       renderAdminCoffeeHistory();
       syncAdminNewsInput();
+      renderEconomicBalance();
     }
   } catch (err) {
     console.error("Chyba při synchronizaci se serverem:", err);
@@ -568,7 +569,7 @@ function initRating() {
           kavaId: state.kava.id, 
           userId: state.currentUser.id, 
           userName: state.currentUser.name, 
-          rating: val,
+          rating: val, 
           date: nowIso
         });
       }
@@ -1016,6 +1017,7 @@ function openAdminScreen() {
   renderAdminUsers();
   renderUsageStats();
   syncAdminNewsInput();
+  renderEconomicBalance();
 }
 
 function closeAdminScreen() {
@@ -1507,6 +1509,7 @@ document.getElementById("admin-save-price")?.addEventListener("click", async () 
   state.finance.cenaKavy = newPrice;
   await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "saveCoffeePrice", cena: newPrice }) });
   alert(`Cena uložena na ${newPrice} Kč.`);
+  renderEconomicBalance();
 });
 
 function syncAdminNewsInput() {
@@ -1780,6 +1783,7 @@ document.querySelectorAll(".admin-details").forEach(detail => {
       renderAdminUsers(); 
       renderAdminPendingRequests(); 
       syncAdminNewsInput();
+      renderEconomicBalance();
     } 
   });
 });
@@ -2084,6 +2088,84 @@ setInterval(() => {
     silentBackgroundSync(true);
   }
 }, 60 * 1000);
+
+// ==========================================
+// EKONOMICKÁ BILANCE & KALKULACE CENY Z 1KG VÝTĚŽNOSTI
+// ==========================================
+function renderEconomicBalance() {
+  const nakladyEl = document.getElementById("admin-eco-naklady");
+  const vybranoEl = document.getElementById("admin-eco-vybrano");
+  const hodnotaVypitoEl = document.getElementById("admin-eco-hodnota-vypito");
+  const bilanceEl = document.getElementById("admin-eco-bilance");
+  const navrhCenyEl = document.getElementById("admin-eco-navrh-ceny");
+  const rozdilCenyEl = document.getElementById("admin-eco-rozdil-ceny");
+  const yieldEl = document.getElementById("admin-eco-yield");
+
+  if (!nakladyEl || !navrhCenyEl) return;
+
+  const naklady = Number(state.finance?.naklady || 0);
+  const vybrano = Number(state.finance?.vybrano || 0);
+  const aktualniCena = Number(state.finance?.cenaKavy || 10);
+
+  // 1. VÝPOČET REÁLNÉ VÝTĚŽNOSTI Z HISTORIE BALENÍ (list Kavy)
+  // Uzavřená balení (aktivni === 0 a mají nasazenoDo a vypito >= 30)
+  const closedPacks = (state.allCoffees || []).filter(c => 
+    c.aktivni === 0 && c.nasazenoDo && Number(c.vypito || 0) >= 30
+  );
+
+  let cupsPerKg = 110; // Výchozí standardní průměr (cca 9g na kávu)
+  let usedRealYield = false;
+
+  if (closedPacks.length > 0) {
+    const totalPacksCups = closedPacks.reduce((sum, c) => sum + Number(c.vypito || 0), 0);
+    cupsPerKg = Math.round(totalPacksCups / closedPacks.length);
+    usedRealYield = true;
+  }
+
+  // 2. PRŮMĚRNÁ CENA BALENÍ Z NÁKUPŮ
+  const celkemBaleni = (state.allCoffees || []).length || 1;
+  const prumernaCenaBaleni = naklady > 0 ? (naklady / celkemBaleni) : 600;
+
+  // 3. FÉROVÁ NÁKLADOVÁ CENA ŠÁLKU (Náklady na balení / šálky z balení)
+  const nakladNaSalek = cupsPerKg > 0 ? (prumernaCenaBaleni / cupsPerKg) : aktualniCena;
+  const doporucenaCenaZaokr = Math.ceil(nakladNaSalek);
+
+  // 4. BILANCE SPOTŘEBY
+  const celkemVypitoVsemi = (state.users || []).reduce((sum, u) => sum + (Number(u.totalDrank) || 0), 0);
+  const hodnotaVypitych = celkemVypitoVsemi * aktualniCena;
+  const pokladniZustatek = vybrano - naklady;
+
+  // Zápis hodnot do administrace
+  nakladyEl.textContent = `${naklady} Kč`;
+  vybranoEl.textContent = `${vybrano} Kč`;
+  hodnotaVypitoEl.textContent = `${hodnotaVypitych} Kč (${celkemVypitoVsemi} ☕)`;
+
+  if (bilanceEl) {
+    bilanceEl.textContent = `${pokladniZustatek >= 0 ? "+" : ""}${pokladniZustatek} Kč`;
+    bilanceEl.style.color = pokladniZustatek >= 0 ? "var(--accent)" : "#c0392b";
+  }
+
+  if (yieldEl) {
+    yieldEl.textContent = `${cupsPerKg} ☕ / kg ${usedRealYield ? `(z ${closedPacks.length} balení)` : '(odhad)'}`;
+  }
+
+  navrhCenyEl.textContent = `${nakladNaSalek.toFixed(1)} Kč`;
+
+  if (rozdilCenyEl) {
+    const diff = nakladNaSalek - aktualniCena;
+    if (Math.abs(diff) < 0.5) {
+      rozdilCenyEl.textContent = `✓ Aktuální cena ${aktualniCena} Kč přesně sedí`;
+      rozdilCenyEl.style.color = "var(--accent)";
+    } else if (diff > 0) {
+      rozdilCenyEl.textContent = `▲ Ztráta ${diff.toFixed(1)} Kč/šálek (ideální cena: ${doporucenaCenaZaokr} Kč)`;
+      rozdilCenyEl.style.color = "#c0392b";
+    } else {
+      const zisk = Math.abs(diff).toFixed(1);
+      rozdilCenyEl.textContent = `▼ Fond v zisku +${zisk} Kč/šálek (náklad je jen ${nakladNaSalek.toFixed(1)} Kč)`;
+      rozdilCenyEl.style.color = "var(--accent)";
+    }
+  }
+}
 
 // ==========================================
 // START APLIKACE

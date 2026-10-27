@@ -462,6 +462,48 @@
         </div>
       </div>
 
+      <!-- EKONOMICKÁ BILANCE & KALKULACE CENY ZE SKUTEČNÉ SPOTŘEBY -->
+      <div class="card" style="margin-top: 14px; background: #fffcf7; border: 1.5px solid #d4a373;">
+        <div class="badge-tag" style="color: var(--primary);">EKONOMIKA FONDU & KALKULACE CENY</div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+          <div style="background: #fff; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">CELKOVÉ NÁKLADY</div>
+            <b id="admin-eco-naklady" style="font-size: 1.05rem; color: #c0392b;">0 Kč</b>
+          </div>
+          <div style="background: #fff; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">CELKEM VYBRÁNO</div>
+            <b id="admin-eco-vybrano" style="font-size: 1.05rem; color: var(--accent);">0 Kč</b>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Reálná výtěžnost z 1 kg balení:</span>
+            <b id="admin-eco-yield" style="font-size: 0.85rem; color: var(--primary);">-- ☕ / kg</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Hotovost v kávové kase:</span>
+            <b id="admin-eco-bilance" style="font-size: 0.95rem;">0 Kč</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Vypito v aktuálních cenách:</span>
+            <b id="admin-eco-hodnota-vypito" style="font-size: 0.85rem;">0 Kč</b>
+          </div>
+
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--card-border); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <b style="font-size: 0.85rem; color: var(--primary);">Férová cena za šálek:</b><br>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">skutečný náklad na 1 kávu</span>
+            </div>
+            <div style="text-align: right;">
+              <b id="admin-eco-navrh-ceny" style="font-size: 1.25rem; color: var(--primary);">-- Kč</b>
+              <span id="admin-eco-rozdil-ceny" style="display: block; font-size: 0.72rem; font-weight: 700;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- HISTORIE KÁV -->
       <div class="card" style="margin-bottom: 10px;">
         <div class="badge-tag">HISTORIE & HODNOCENÍ VŠECH KÁV</div>
