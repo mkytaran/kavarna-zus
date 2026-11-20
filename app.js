@@ -604,6 +604,8 @@ function paintHearts(val) {
 // ==========================================
 // 4. DENNÍ ODZNÁČEK & ODKLIKÁVÁNÍ
 // ==========================================
+let lastCupClickTime = 0;
+
 function syncDailyBadge() {
   if (!state.currentUser) return;
   const key = `zus_daily_badge_${state.currentUser.id}`;
@@ -655,7 +657,21 @@ if (cupAction) {
   cupAction.addEventListener("click", () => {
     const u = state.currentUser;
     if (!u) return;
-    u.drank += 1;
+
+    // 1. Ochrana proti nechtěnému dvojkliku / kapse (min. rozestup 1000 ms)
+    const now = Date.now();
+    if (now - lastCupClickTime < 1000) return;
+
+    // 2. Pojistka od 4. kávy za den (zabrání kapesnímu naklikání)
+    if (state.todayDrank >= 3) {
+      if (!confirm(`Dnes už máš ${state.todayDrank} kávy. Opravdu připsat ${state.todayDrank + 1}. kávu?`)) {
+        return;
+      }
+    }
+
+    lastCupClickTime = Date.now();
+
+    u.drank = (Number(u.drank) || 0) + 1;
     state.clicksInSession += 1;
     state.todayDrank += 1;
     u.totalDrank = (Number(u.totalDrank) || 0) + 1;
@@ -664,7 +680,7 @@ if (cupAction) {
     saveDailyBadge(); 
     updateCupsView();
     triggerUndoTimer();
-    syncDrankToServer(u.id, u.drank);
+    syncDrankToServer(u.id, 1);
   });
 }
 
@@ -672,7 +688,7 @@ if (undoBtn) {
   undoBtn.addEventListener("click", async () => {
     const u = state.currentUser;
     if (!u || state.todayDrank <= 1 || state.clicksInSession <= 0) return;
-    u.drank -= 1;
+    u.drank = Math.max(0, (Number(u.drank) || 0) - 1);
     state.clicksInSession -= 1;
     state.todayDrank -= 1;
     u.totalDrank = Math.max(0, (Number(u.totalDrank) || 0) - 1);
@@ -682,14 +698,24 @@ if (undoBtn) {
     updateCupsView();
     checkUndoAvailability();
 
-    await syncDrankToServer(u.id, u.drank);
+    await syncDrankToServer(u.id, -1);
     await loadData();
   });
 }
 
-async function syncDrankToServer(userId, drank) {
+async function syncDrankToServer(userId, diff) {
   try {
-    await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "drinkCoffee", id: userId, drank: drank }) });
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "drinkCoffee", id: userId, diff: diff })
+    });
+    const data = await res.json();
+    if (data && data.success && state.currentUser && String(state.currentUser.id) === String(userId)) {
+      state.currentUser.drank = data.drank;
+      state.currentUser.totalDrank = data.totalDrank;
+      localStorage.setItem("zus_saved_user", JSON.stringify(state.currentUser));
+      updateCupsView();
+    }
   } catch (e) { console.error("Chyba:", e); }
 }
 
