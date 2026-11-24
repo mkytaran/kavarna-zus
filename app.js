@@ -286,6 +286,7 @@ function showMainScreen(user) {
   updateCupsView();
   initRating();
   syncDailyBadge();
+  restorePendingPaymentBanner();
 
   if (state.logs && state.logs.length > 0) {
     document.getElementById("coffee-newspaper-tag")?.classList.remove("hidden");
@@ -859,26 +860,13 @@ async function downloadQrImageBlob(amount) {
 
 async function submitPaymentClaim(amount) {
   const u = state.currentUser;
-  if (!u || !amount || amount <= 0) return;
+  if (!u || !amount || amount <= 0) return false;
 
   const cenaKavy = Number(state.finance?.cenaKavy) || 10;
   const cupsToAdd = Math.floor(amount / cenaKavy);
 
-  const currentPrepaid = Number(u.prepaid) || 0;
-  const currentDrank = Number(u.drank) || 0;
-  const currentBalance = currentPrepaid - currentDrank;
-
-  u.prepaid = Math.max(0, currentBalance + cupsToAdd);
-  u.drank = 0;
-  u.totalPaid = (Number(u.totalPaid) || 0) + amount;
-
-  localStorage.setItem("zus_saved_user", JSON.stringify(u));
-  updateCupsView();
-
-  hidePaymentBanner();
-
   try {
-    await fetch(SCRIPT_URL, {
+    const res = await fetch(SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify({
         action: "submitUserPayment",
@@ -888,8 +876,28 @@ async function submitPaymentClaim(amount) {
         cups: cupsToAdd
       })
     });
+    const data = await res.json();
+
+    if (!data || !data.success) {
+      throw new Error("Server nepotvrdil uložení platby.");
+    }
+
+    const currentPrepaid = Number(u.prepaid) || 0;
+    const currentDrank = Number(u.drank) || 0;
+    const currentBalance = currentPrepaid - currentDrank;
+
+    u.prepaid = Math.max(0, currentBalance + cupsToAdd);
+    u.drank = 0;
+    u.totalPaid = (Number(u.totalPaid) || 0) + amount;
+
+    localStorage.setItem("zus_saved_user", JSON.stringify(u));
+    updateCupsView();
+    hidePaymentBanner();
+    return true;
   } catch (err) {
-    console.warn("Platba byla zapsána lokálně offline:", err);
+    console.error("Chyba při odesílání platby na server:", err);
+    alert("Nepodařilo se odeslat platbu na server (zkontroluj připojení) a zkus to znovu.");
+    return false;
   }
 }
 
@@ -898,22 +906,43 @@ function showPaymentBanner(amount) {
   const claimBtn = document.getElementById("banner-claim-btn");
   if (!banner || !claimBtn) return;
 
+  // Uložíme do localStorage, aby banner přežil i obnovení Safari na iPhonu
+  if (state.currentUser) {
+    localStorage.setItem(`zus_unclaimed_pay_${state.currentUser.id}`, String(amount));
+  }
+
+  claimBtn.disabled = false;
   claimBtn.textContent = `Připsat ${amount} Kč`;
   claimBtn.onclick = async () => {
     claimBtn.disabled = true;
     claimBtn.textContent = "Připisuji...";
-    await submitPaymentClaim(amount);
-    const cenaKavy = Number(state.finance?.cenaKavy) || 10;
-    alert(`Připsáno ${Math.floor(amount / cenaKavy)} šálků (${amount} Kč). Správce platbu zkontroluje.`);
-    await loadData();
+    const ok = await submitPaymentClaim(amount);
+    if (ok) {
+      const cenaKavy = Number(state.finance?.cenaKavy) || 10;
+      alert(`Připsáno ${Math.floor(amount / cenaKavy)} šálků (${amount} Kč). Správce platbu zkontroluje.`);
+      await loadData();
+    } else {
+      claimBtn.disabled = false;
+      claimBtn.textContent = `Připsat ${amount} Kč`;
+    }
   };
 
   banner.classList.remove("hidden");
-  setTimeout(() => hidePaymentBanner(), 15 * 60 * 1000);
 }
 
 function hidePaymentBanner() {
+  if (state.currentUser) {
+    localStorage.removeItem(`zus_unclaimed_pay_${state.currentUser.id}`);
+  }
   document.getElementById("payment-pending-banner")?.classList.add("hidden");
+}
+
+function restorePendingPaymentBanner() {
+  if (!state.currentUser) return;
+  const savedAmount = localStorage.getItem(`zus_unclaimed_pay_${state.currentUser.id}`);
+  if (savedAmount && Number(savedAmount) > 0) {
+    showPaymentBanner(Number(savedAmount));
+  }
 }
 
 document.addEventListener("click", async (e) => {
@@ -921,6 +950,9 @@ document.addEventListener("click", async (e) => {
     e.preventDefault();
     document.getElementById("qr-pay-modal")?.classList.remove("hidden");
     updateQrPaymentModal();
+    // Připravíme záchranný banner pro případ, že uživatel udělá screenshot a odejde do banky
+    const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
+    showPaymentBanner(amount);
     return;
   }
 
@@ -940,10 +972,12 @@ document.addEventListener("click", async (e) => {
 
     try {
       await downloadQrImageBlob(amount).catch(err => console.warn("QR download fallback:", err));
-      await submitPaymentClaim(amount);
-      document.getElementById("qr-pay-modal")?.classList.add("hidden");
-      alert(`Předplaceno ${cups} šálků (${amount} Kč). Správce platbu potvrdí po přijetí na účet.`);
-      await loadData();
+      const ok = await submitPaymentClaim(amount);
+      if (ok) {
+        document.getElementById("qr-pay-modal")?.classList.add("hidden");
+        alert(`Předplaceno ${cups} šálků (${amount} Kč). Správce platbu potvrdí po přijetí na účet.`);
+        await loadData();
+      }
     } catch (err) {
       console.error("Chyba při připsání platby:", err);
       alert("Došlo k chybě při připsání kreditu.");
@@ -960,8 +994,10 @@ document.addEventListener("click", async (e) => {
     const msg = `${state.currentUser ? state.currentUser.name : ''} za kafe`.trim();
     const textToCopy = `Číslo účtu: 6334341013/0800\nČástka: ${amount} Kč\nZpráva pro příjemce: ${msg}`;
 
+    showPaymentBanner(amount);
+
     navigator.clipboard.writeText(textToCopy).then(() => {
-      alert("Platební údaje zkopírovány do schránky!");
+      alert("Platební údaje zkopírovány do schránky! Po odeslání v bance potvrď připsání kreditu.");
     }).catch(() => {
       alert("Účet: 6334341013/0800, Zpráva: " + msg);
     });
@@ -983,7 +1019,11 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-document.getElementById("qr-amount-input")?.addEventListener("input", updateQrPaymentModal);
+document.getElementById("qr-amount-input")?.addEventListener("input", () => {
+  updateQrPaymentModal();
+  const amount = Number(document.getElementById("qr-amount-input")?.value) || 150;
+  showPaymentBanner(amount);
+});
 
 // ==========================================
 // 7. ADMINISTRACE - PŘEPÍNÁNÍ

@@ -1,4 +1,4 @@
-const CACHE_NAME = "zuskafe-app-shell-v14";
+const CACHE_NAME = "zuskafe-app-shell-v15";
 
 const STATIC_ASSETS = [
   "./",
